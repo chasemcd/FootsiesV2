@@ -7,7 +7,7 @@
 /Assets/AssetStoreTools*
 
 .log
-
+.vscode
 
 # Visual Studio 2015 cache directory
 /.vs/
