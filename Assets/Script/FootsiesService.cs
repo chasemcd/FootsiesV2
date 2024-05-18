@@ -22,30 +22,31 @@ public static partial class FootsiesServiceReflection {
   static FootsiesServiceReflection() {
     byte[] descriptorData = global::System.Convert.FromBase64String(
         string.Concat(
-          "ChtnYW1lL2Zvb3RzaWVzX3NlcnZpY2UucHJvdG8aG2dhbWUvY3NoYXJwX25h",
-          "bWVzcGFjZS5wcm90byJCCglTdGVwSW5wdXQSEQoJcDBfYWN0aW9uGAEgASgE",
-          "EhEKCXAxX2FjdGlvbhgCIAEoBBIPCgduRnJhbWVzGAMgASgEIo4DCgtQbGF5",
-          "ZXJTdGF0ZRIXCg9wbGF5ZXJfcG9zaXRpb24YASADKAQSDwoHaXNfZGVhZBgC",
-          "IAEoCBIUCgx2aXRhbF9oZWFsdGgYAyABKAQSFAoMZ3VhcmRfaGVhbHRoGAQg",
-          "ASgEEhkKEWN1cnJlbnRfYWN0aW9uX2lkGAUgASgEEhwKFGN1cnJlbnRfYWN0",
-          "aW9uX2ZyYW1lGAYgASgEEiIKGmN1cnJlbnRfYWN0aW9uX2ZyYW1lX2NvdW50",
-          "GAcgASgEEhUKDWlzX2FjdGlvbl9lbmQYCCABKAgSHAoUaXNfYWx3YXlzX2Nh",
-          "bmNlbGFibGUYCSABKAgSIAoYY3VycmVudF9hY3Rpb25faGl0X2NvdW50GAog",
-          "ASgEEh4KFmN1cnJlbnRfaGl0X3N0dW5fZnJhbWUYCyABKAQSFgoOaXNfaW5f",
-          "aGl0X3N0dW4YDCABKAgSHQoVc3ByaXRlX3NoYWtlX3Bvc2l0aW9uGA0gASgE",
-          "Eh4KFm1heF9zcHJpdGVfc2hha2VfZnJhbWUYDiABKAQiXQoJR2FtZVN0YXRl",
-          "Eh0KB3BsYXllcjAYASABKAsyDC5QbGF5ZXJTdGF0ZRIdCgdwbGF5ZXIxGAIg",
-          "ASgLMgwuUGxheWVyU3RhdGUSEgoKdGVybWluYXRlZBgDIAEoCCIHCgVFbXB0",
-          "eTKWAQoTRm9vdHNpZXNHYW1lU2VydmljZRIbCglTdGFydEdhbWUSBi5FbXB0",
-          "eRoGLkVtcHR5EhsKCVJlc2V0R2FtZRIGLkVtcHR5GgYuRW1wdHkSJQoLU3Rl",
-          "cE5GcmFtZXMSCi5TdGVwSW5wdXQaCi5HYW1lU3RhdGUSHgoIR2V0U3RhdGUS",
-          "Bi5FbXB0eRoKLkdhbWVTdGF0ZUIMirUYCEZvb3RzaWVzYgZwcm90bzM="));
+          "ChtnYW1lL2Zvb3RzaWVzX3NlcnZpY2UucHJvdG8iQgoJU3RlcElucHV0EhEK",
+          "CXAxX2FjdGlvbhgBIAEoBBIRCglwMl9hY3Rpb24YAiABKAQSDwoHbkZyYW1l",
+          "cxgDIAEoBCK3AwoLUGxheWVyU3RhdGUSFwoPcGxheWVyX3Bvc2l0aW9uGAEg",
+          "AygEEg8KB2lzX2RlYWQYAiABKAgSFAoMdml0YWxfaGVhbHRoGAMgASgEEhQK",
+          "DGd1YXJkX2hlYWx0aBgEIAEoBBIZChFjdXJyZW50X2FjdGlvbl9pZBgFIAEo",
+          "BBIcChRjdXJyZW50X2FjdGlvbl9mcmFtZRgGIAEoBBIiChpjdXJyZW50X2Fj",
+          "dGlvbl9mcmFtZV9jb3VudBgHIAEoBBIVCg1pc19hY3Rpb25fZW5kGAggASgI",
+          "EhwKFGlzX2Fsd2F5c19jYW5jZWxhYmxlGAkgASgIEiAKGGN1cnJlbnRfYWN0",
+          "aW9uX2hpdF9jb3VudBgKIAEoBBIeChZjdXJyZW50X2hpdF9zdHVuX2ZyYW1l",
+          "GAsgASgEEhYKDmlzX2luX2hpdF9zdHVuGAwgASgIEh0KFXNwcml0ZV9zaGFr",
+          "ZV9wb3NpdGlvbhgNIAEoBBIeChZtYXhfc3ByaXRlX3NoYWtlX2ZyYW1lGA4g",
+          "ASgEEhIKCnZlbG9jaXR5X3gYDyABKAISEwoLaXNGYWNlUmlnaHQYECABKAgi",
+          "cwoJR2FtZVN0YXRlEh0KB3BsYXllcjEYASABKAsyDC5QbGF5ZXJTdGF0ZRId",
+          "CgdwbGF5ZXIyGAIgASgLMgwuUGxheWVyU3RhdGUSEwoLcm91bmRfc3RhdGUY",
+          "AyABKAQSEwoLZnJhbWVfY291bnQYBCABKAQiBwoFRW1wdHkyngEKE0Zvb3Rz",
+          "aWVzR2FtZVNlcnZpY2USHQoJU3RhcnRHYW1lEgYuRW1wdHkaBi5FbXB0eSIA",
+          "Eh0KCVJlc2V0R2FtZRIGLkVtcHR5GgYuRW1wdHkiABInCgtTdGVwTkZyYW1l",
+          "cxIKLlN0ZXBJbnB1dBoKLkdhbWVTdGF0ZSIAEiAKCEdldFN0YXRlEgYuRW1w",
+          "dHkaCi5HYW1lU3RhdGUiAGIGcHJvdG8z"));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-        new pbr::FileDescriptor[] { global::Google.Protobuf.CsharpNamespaceReflection.Descriptor, },
+        new pbr::FileDescriptor[] { },
         new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-          new pbr::GeneratedClrTypeInfo(typeof(global::StepInput), global::StepInput.Parser, new[]{ "P0Action", "P1Action", "NFrames" }, null, null, null, null),
-          new pbr::GeneratedClrTypeInfo(typeof(global::PlayerState), global::PlayerState.Parser, new[]{ "PlayerPosition", "IsDead", "VitalHealth", "GuardHealth", "CurrentActionId", "CurrentActionFrame", "CurrentActionFrameCount", "IsActionEnd", "IsAlwaysCancelable", "CurrentActionHitCount", "CurrentHitStunFrame", "IsInHitStun", "SpriteShakePosition", "MaxSpriteShakeFrame" }, null, null, null, null),
-          new pbr::GeneratedClrTypeInfo(typeof(global::GameState), global::GameState.Parser, new[]{ "Player0", "Player1", "Terminated" }, null, null, null, null),
+          new pbr::GeneratedClrTypeInfo(typeof(global::StepInput), global::StepInput.Parser, new[]{ "P1Action", "P2Action", "NFrames" }, null, null, null, null),
+          new pbr::GeneratedClrTypeInfo(typeof(global::PlayerState), global::PlayerState.Parser, new[]{ "PlayerPosition", "IsDead", "VitalHealth", "GuardHealth", "CurrentActionId", "CurrentActionFrame", "CurrentActionFrameCount", "IsActionEnd", "IsAlwaysCancelable", "CurrentActionHitCount", "CurrentHitStunFrame", "IsInHitStun", "SpriteShakePosition", "MaxSpriteShakeFrame", "VelocityX", "IsFaceRight" }, null, null, null, null),
+          new pbr::GeneratedClrTypeInfo(typeof(global::GameState), global::GameState.Parser, new[]{ "Player1", "Player2", "RoundState", "FrameCount" }, null, null, null, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::Empty), global::Empty.Parser, null, null, null, null, null)
         }));
   }
@@ -88,8 +89,8 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public StepInput(StepInput other) : this() {
-    p0Action_ = other.p0Action_;
     p1Action_ = other.p1Action_;
+    p2Action_ = other.p2Action_;
     nFrames_ = other.nFrames_;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
@@ -100,20 +101,8 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
     return new StepInput(this);
   }
 
-  /// <summary>Field number for the "p0_action" field.</summary>
-  public const int P0ActionFieldNumber = 1;
-  private ulong p0Action_;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public ulong P0Action {
-    get { return p0Action_; }
-    set {
-      p0Action_ = value;
-    }
-  }
-
   /// <summary>Field number for the "p1_action" field.</summary>
-  public const int P1ActionFieldNumber = 2;
+  public const int P1ActionFieldNumber = 1;
   private ulong p1Action_;
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -121,6 +110,18 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
     get { return p1Action_; }
     set {
       p1Action_ = value;
+    }
+  }
+
+  /// <summary>Field number for the "p2_action" field.</summary>
+  public const int P2ActionFieldNumber = 2;
+  private ulong p2Action_;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+  public ulong P2Action {
+    get { return p2Action_; }
+    set {
+      p2Action_ = value;
     }
   }
 
@@ -151,8 +152,8 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
     if (ReferenceEquals(other, this)) {
       return true;
     }
-    if (P0Action != other.P0Action) return false;
     if (P1Action != other.P1Action) return false;
+    if (P2Action != other.P2Action) return false;
     if (NFrames != other.NFrames) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
@@ -161,8 +162,8 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public override int GetHashCode() {
     int hash = 1;
-    if (P0Action != 0UL) hash ^= P0Action.GetHashCode();
     if (P1Action != 0UL) hash ^= P1Action.GetHashCode();
+    if (P2Action != 0UL) hash ^= P2Action.GetHashCode();
     if (NFrames != 0UL) hash ^= NFrames.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
@@ -182,13 +183,13 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
     output.WriteRawMessage(this);
   #else
-    if (P0Action != 0UL) {
-      output.WriteRawTag(8);
-      output.WriteUInt64(P0Action);
-    }
     if (P1Action != 0UL) {
-      output.WriteRawTag(16);
+      output.WriteRawTag(8);
       output.WriteUInt64(P1Action);
+    }
+    if (P2Action != 0UL) {
+      output.WriteRawTag(16);
+      output.WriteUInt64(P2Action);
     }
     if (NFrames != 0UL) {
       output.WriteRawTag(24);
@@ -204,13 +205,13 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-    if (P0Action != 0UL) {
-      output.WriteRawTag(8);
-      output.WriteUInt64(P0Action);
-    }
     if (P1Action != 0UL) {
-      output.WriteRawTag(16);
+      output.WriteRawTag(8);
       output.WriteUInt64(P1Action);
+    }
+    if (P2Action != 0UL) {
+      output.WriteRawTag(16);
+      output.WriteUInt64(P2Action);
     }
     if (NFrames != 0UL) {
       output.WriteRawTag(24);
@@ -226,11 +227,11 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public int CalculateSize() {
     int size = 0;
-    if (P0Action != 0UL) {
-      size += 1 + pb::CodedOutputStream.ComputeUInt64Size(P0Action);
-    }
     if (P1Action != 0UL) {
       size += 1 + pb::CodedOutputStream.ComputeUInt64Size(P1Action);
+    }
+    if (P2Action != 0UL) {
+      size += 1 + pb::CodedOutputStream.ComputeUInt64Size(P2Action);
     }
     if (NFrames != 0UL) {
       size += 1 + pb::CodedOutputStream.ComputeUInt64Size(NFrames);
@@ -247,11 +248,11 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
     if (other == null) {
       return;
     }
-    if (other.P0Action != 0UL) {
-      P0Action = other.P0Action;
-    }
     if (other.P1Action != 0UL) {
       P1Action = other.P1Action;
+    }
+    if (other.P2Action != 0UL) {
+      P2Action = other.P2Action;
     }
     if (other.NFrames != 0UL) {
       NFrames = other.NFrames;
@@ -272,11 +273,11 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
           _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
           break;
         case 8: {
-          P0Action = input.ReadUInt64();
+          P1Action = input.ReadUInt64();
           break;
         }
         case 16: {
-          P1Action = input.ReadUInt64();
+          P2Action = input.ReadUInt64();
           break;
         }
         case 24: {
@@ -299,11 +300,11 @@ public sealed partial class StepInput : pb::IMessage<StepInput>
           _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
           break;
         case 8: {
-          P0Action = input.ReadUInt64();
+          P1Action = input.ReadUInt64();
           break;
         }
         case 16: {
-          P1Action = input.ReadUInt64();
+          P2Action = input.ReadUInt64();
           break;
         }
         case 24: {
@@ -366,6 +367,8 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
     isInHitStun_ = other.isInHitStun_;
     spriteShakePosition_ = other.spriteShakePosition_;
     maxSpriteShakeFrame_ = other.maxSpriteShakeFrame_;
+    velocityX_ = other.velocityX_;
+    isFaceRight_ = other.isFaceRight_;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
 
@@ -542,6 +545,30 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
     }
   }
 
+  /// <summary>Field number for the "velocity_x" field.</summary>
+  public const int VelocityXFieldNumber = 15;
+  private float velocityX_;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+  public float VelocityX {
+    get { return velocityX_; }
+    set {
+      velocityX_ = value;
+    }
+  }
+
+  /// <summary>Field number for the "isFaceRight" field.</summary>
+  public const int IsFaceRightFieldNumber = 16;
+  private bool isFaceRight_;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+  public bool IsFaceRight {
+    get { return isFaceRight_; }
+    set {
+      isFaceRight_ = value;
+    }
+  }
+
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public override bool Equals(object other) {
@@ -571,6 +598,8 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
     if (IsInHitStun != other.IsInHitStun) return false;
     if (SpriteShakePosition != other.SpriteShakePosition) return false;
     if (MaxSpriteShakeFrame != other.MaxSpriteShakeFrame) return false;
+    if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(VelocityX, other.VelocityX)) return false;
+    if (IsFaceRight != other.IsFaceRight) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
 
@@ -592,6 +621,8 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
     if (IsInHitStun != false) hash ^= IsInHitStun.GetHashCode();
     if (SpriteShakePosition != 0UL) hash ^= SpriteShakePosition.GetHashCode();
     if (MaxSpriteShakeFrame != 0UL) hash ^= MaxSpriteShakeFrame.GetHashCode();
+    if (VelocityX != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(VelocityX);
+    if (IsFaceRight != false) hash ^= IsFaceRight.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
     }
@@ -663,6 +694,14 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
       output.WriteRawTag(112);
       output.WriteUInt64(MaxSpriteShakeFrame);
     }
+    if (VelocityX != 0F) {
+      output.WriteRawTag(125);
+      output.WriteFloat(VelocityX);
+    }
+    if (IsFaceRight != false) {
+      output.WriteRawTag(128, 1);
+      output.WriteBool(IsFaceRight);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
     }
@@ -726,6 +765,14 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
       output.WriteRawTag(112);
       output.WriteUInt64(MaxSpriteShakeFrame);
     }
+    if (VelocityX != 0F) {
+      output.WriteRawTag(125);
+      output.WriteFloat(VelocityX);
+    }
+    if (IsFaceRight != false) {
+      output.WriteRawTag(128, 1);
+      output.WriteBool(IsFaceRight);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(ref output);
     }
@@ -775,6 +822,12 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
     }
     if (MaxSpriteShakeFrame != 0UL) {
       size += 1 + pb::CodedOutputStream.ComputeUInt64Size(MaxSpriteShakeFrame);
+    }
+    if (VelocityX != 0F) {
+      size += 1 + 4;
+    }
+    if (IsFaceRight != false) {
+      size += 2 + 1;
     }
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
@@ -827,6 +880,12 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
     }
     if (other.MaxSpriteShakeFrame != 0UL) {
       MaxSpriteShakeFrame = other.MaxSpriteShakeFrame;
+    }
+    if (other.VelocityX != 0F) {
+      VelocityX = other.VelocityX;
+    }
+    if (other.IsFaceRight != false) {
+      IsFaceRight = other.IsFaceRight;
     }
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
@@ -898,6 +957,14 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
         }
         case 112: {
           MaxSpriteShakeFrame = input.ReadUInt64();
+          break;
+        }
+        case 125: {
+          VelocityX = input.ReadFloat();
+          break;
+        }
+        case 128: {
+          IsFaceRight = input.ReadBool();
           break;
         }
       }
@@ -972,6 +1039,14 @@ public sealed partial class PlayerState : pb::IMessage<PlayerState>
           MaxSpriteShakeFrame = input.ReadUInt64();
           break;
         }
+        case 125: {
+          VelocityX = input.ReadFloat();
+          break;
+        }
+        case 128: {
+          IsFaceRight = input.ReadBool();
+          break;
+        }
       }
     }
   }
@@ -1014,9 +1089,10 @@ public sealed partial class GameState : pb::IMessage<GameState>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public GameState(GameState other) : this() {
-    player0_ = other.player0_ != null ? other.player0_.Clone() : null;
     player1_ = other.player1_ != null ? other.player1_.Clone() : null;
-    terminated_ = other.terminated_;
+    player2_ = other.player2_ != null ? other.player2_.Clone() : null;
+    roundState_ = other.roundState_;
+    frameCount_ = other.frameCount_;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
 
@@ -1026,20 +1102,8 @@ public sealed partial class GameState : pb::IMessage<GameState>
     return new GameState(this);
   }
 
-  /// <summary>Field number for the "player0" field.</summary>
-  public const int Player0FieldNumber = 1;
-  private global::PlayerState player0_;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public global::PlayerState Player0 {
-    get { return player0_; }
-    set {
-      player0_ = value;
-    }
-  }
-
   /// <summary>Field number for the "player1" field.</summary>
-  public const int Player1FieldNumber = 2;
+  public const int Player1FieldNumber = 1;
   private global::PlayerState player1_;
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1050,15 +1114,39 @@ public sealed partial class GameState : pb::IMessage<GameState>
     }
   }
 
-  /// <summary>Field number for the "terminated" field.</summary>
-  public const int TerminatedFieldNumber = 3;
-  private bool terminated_;
+  /// <summary>Field number for the "player2" field.</summary>
+  public const int Player2FieldNumber = 2;
+  private global::PlayerState player2_;
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-  public bool Terminated {
-    get { return terminated_; }
+  public global::PlayerState Player2 {
+    get { return player2_; }
     set {
-      terminated_ = value;
+      player2_ = value;
+    }
+  }
+
+  /// <summary>Field number for the "round_state" field.</summary>
+  public const int RoundStateFieldNumber = 3;
+  private ulong roundState_;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+  public ulong RoundState {
+    get { return roundState_; }
+    set {
+      roundState_ = value;
+    }
+  }
+
+  /// <summary>Field number for the "frame_count" field.</summary>
+  public const int FrameCountFieldNumber = 4;
+  private ulong frameCount_;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+  public ulong FrameCount {
+    get { return frameCount_; }
+    set {
+      frameCount_ = value;
     }
   }
 
@@ -1077,9 +1165,10 @@ public sealed partial class GameState : pb::IMessage<GameState>
     if (ReferenceEquals(other, this)) {
       return true;
     }
-    if (!object.Equals(Player0, other.Player0)) return false;
     if (!object.Equals(Player1, other.Player1)) return false;
-    if (Terminated != other.Terminated) return false;
+    if (!object.Equals(Player2, other.Player2)) return false;
+    if (RoundState != other.RoundState) return false;
+    if (FrameCount != other.FrameCount) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
 
@@ -1087,9 +1176,10 @@ public sealed partial class GameState : pb::IMessage<GameState>
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public override int GetHashCode() {
     int hash = 1;
-    if (player0_ != null) hash ^= Player0.GetHashCode();
     if (player1_ != null) hash ^= Player1.GetHashCode();
-    if (Terminated != false) hash ^= Terminated.GetHashCode();
+    if (player2_ != null) hash ^= Player2.GetHashCode();
+    if (RoundState != 0UL) hash ^= RoundState.GetHashCode();
+    if (FrameCount != 0UL) hash ^= FrameCount.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
     }
@@ -1108,17 +1198,21 @@ public sealed partial class GameState : pb::IMessage<GameState>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
     output.WriteRawMessage(this);
   #else
-    if (player0_ != null) {
-      output.WriteRawTag(10);
-      output.WriteMessage(Player0);
-    }
     if (player1_ != null) {
-      output.WriteRawTag(18);
+      output.WriteRawTag(10);
       output.WriteMessage(Player1);
     }
-    if (Terminated != false) {
+    if (player2_ != null) {
+      output.WriteRawTag(18);
+      output.WriteMessage(Player2);
+    }
+    if (RoundState != 0UL) {
       output.WriteRawTag(24);
-      output.WriteBool(Terminated);
+      output.WriteUInt64(RoundState);
+    }
+    if (FrameCount != 0UL) {
+      output.WriteRawTag(32);
+      output.WriteUInt64(FrameCount);
     }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
@@ -1130,17 +1224,21 @@ public sealed partial class GameState : pb::IMessage<GameState>
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-    if (player0_ != null) {
-      output.WriteRawTag(10);
-      output.WriteMessage(Player0);
-    }
     if (player1_ != null) {
-      output.WriteRawTag(18);
+      output.WriteRawTag(10);
       output.WriteMessage(Player1);
     }
-    if (Terminated != false) {
+    if (player2_ != null) {
+      output.WriteRawTag(18);
+      output.WriteMessage(Player2);
+    }
+    if (RoundState != 0UL) {
       output.WriteRawTag(24);
-      output.WriteBool(Terminated);
+      output.WriteUInt64(RoundState);
+    }
+    if (FrameCount != 0UL) {
+      output.WriteRawTag(32);
+      output.WriteUInt64(FrameCount);
     }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(ref output);
@@ -1152,14 +1250,17 @@ public sealed partial class GameState : pb::IMessage<GameState>
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public int CalculateSize() {
     int size = 0;
-    if (player0_ != null) {
-      size += 1 + pb::CodedOutputStream.ComputeMessageSize(Player0);
-    }
     if (player1_ != null) {
       size += 1 + pb::CodedOutputStream.ComputeMessageSize(Player1);
     }
-    if (Terminated != false) {
-      size += 1 + 1;
+    if (player2_ != null) {
+      size += 1 + pb::CodedOutputStream.ComputeMessageSize(Player2);
+    }
+    if (RoundState != 0UL) {
+      size += 1 + pb::CodedOutputStream.ComputeUInt64Size(RoundState);
+    }
+    if (FrameCount != 0UL) {
+      size += 1 + pb::CodedOutputStream.ComputeUInt64Size(FrameCount);
     }
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
@@ -1173,20 +1274,23 @@ public sealed partial class GameState : pb::IMessage<GameState>
     if (other == null) {
       return;
     }
-    if (other.player0_ != null) {
-      if (player0_ == null) {
-        Player0 = new global::PlayerState();
-      }
-      Player0.MergeFrom(other.Player0);
-    }
     if (other.player1_ != null) {
       if (player1_ == null) {
         Player1 = new global::PlayerState();
       }
       Player1.MergeFrom(other.Player1);
     }
-    if (other.Terminated != false) {
-      Terminated = other.Terminated;
+    if (other.player2_ != null) {
+      if (player2_ == null) {
+        Player2 = new global::PlayerState();
+      }
+      Player2.MergeFrom(other.Player2);
+    }
+    if (other.RoundState != 0UL) {
+      RoundState = other.RoundState;
+    }
+    if (other.FrameCount != 0UL) {
+      FrameCount = other.FrameCount;
     }
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
@@ -1204,21 +1308,25 @@ public sealed partial class GameState : pb::IMessage<GameState>
           _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
           break;
         case 10: {
-          if (player0_ == null) {
-            Player0 = new global::PlayerState();
-          }
-          input.ReadMessage(Player0);
-          break;
-        }
-        case 18: {
           if (player1_ == null) {
             Player1 = new global::PlayerState();
           }
           input.ReadMessage(Player1);
           break;
         }
+        case 18: {
+          if (player2_ == null) {
+            Player2 = new global::PlayerState();
+          }
+          input.ReadMessage(Player2);
+          break;
+        }
         case 24: {
-          Terminated = input.ReadBool();
+          RoundState = input.ReadUInt64();
+          break;
+        }
+        case 32: {
+          FrameCount = input.ReadUInt64();
           break;
         }
       }
@@ -1237,21 +1345,25 @@ public sealed partial class GameState : pb::IMessage<GameState>
           _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
           break;
         case 10: {
-          if (player0_ == null) {
-            Player0 = new global::PlayerState();
-          }
-          input.ReadMessage(Player0);
-          break;
-        }
-        case 18: {
           if (player1_ == null) {
             Player1 = new global::PlayerState();
           }
           input.ReadMessage(Player1);
           break;
         }
+        case 18: {
+          if (player2_ == null) {
+            Player2 = new global::PlayerState();
+          }
+          input.ReadMessage(Player2);
+          break;
+        }
         case 24: {
-          Terminated = input.ReadBool();
+          RoundState = input.ReadUInt64();
+          break;
+        }
+        case 32: {
+          FrameCount = input.ReadUInt64();
           break;
         }
       }

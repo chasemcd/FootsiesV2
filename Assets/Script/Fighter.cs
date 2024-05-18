@@ -715,5 +715,35 @@ namespace Footsies
 
             return fightPosRect;
         }
+
+
+        // For gRPC
+
+        public PlayerState getPlayerState()
+        {
+            PlayerState playerState = new PlayerState
+            {   
+                IsDead = isDead,
+                VitalHealth = (ulong)vitalHealth,
+                GuardHealth = (ulong)guardHealth,
+                CurrentActionId = (ulong)currentActionID,
+                CurrentActionFrame = (ulong)currentActionFrame,
+                CurrentActionFrameCount = (ulong)currentActionFrameCount,
+                IsActionEnd = isActionEnd,
+                IsAlwaysCancelable = fighterData.actions[currentActionID].alwaysCancelable,
+                CurrentActionHitCount = (ulong)currentActionHitCount,
+                CurrentHitStunFrame = (ulong)currentHitStunFrame,
+                IsInHitStun = isInHitStun,
+                SpriteShakePosition = (ulong)spriteShakePosition,
+                MaxSpriteShakeFrame = (ulong)maxSpriteShakeFrame,
+                VelocityX = velocity_x,
+                IsFaceRight = isFaceRight,
+            };
+
+            playerState.PlayerPosition.Add((ulong)position.x);
+            playerState.PlayerPosition.Add((ulong)position.y);
+
+            return playerState;
+        }
     }
 }

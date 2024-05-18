@@ -57,6 +57,8 @@ namespace Footsies
         private Animator hitEffectAnimator1;
         private Animator hitEffectAnimator2;
 
+        public bool useGrpcController = true;
+
         #endregion
 
         private void Awake()
@@ -91,6 +93,23 @@ namespace Footsies
             {
                 drawDebug = !drawDebug;
             }
+
+            if (useGrpcController)
+            {
+                return;
+            }
+
+            UpdateLogic();
+        }
+
+        public void ManualFixedUpdate()
+        {
+            UpdateLogic();
+        }
+
+        private void UpdateLogic()
+        {
+
 
             CalculateBattleArea();
             CalculateFightPointToScreenScale();

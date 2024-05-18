@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Xml.Serialization;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -47,8 +48,8 @@ namespace Footsies
         public Fighter fighter1 { get; private set; }
         public Fighter fighter2 { get; private set; }
 
-        public InputDefine? ServerP1Input { get; set; }
-        public InputDefine? ServerP2Input { get; set; }
+        public InputData ServerP1Input { get; set; }
+        public InputData ServerP2Input { get; set; }
 
         public uint fighter1RoundWon { get; private set; }
         public uint fighter2RoundWon { get; private set; }
@@ -81,6 +82,10 @@ namespace Footsies
 
         public bool isDebugPause { get; private set; }
 
+
+        // TODO(chase): set this to False by default and enable only with gRPC. 
+        public bool useGrpcController = true;
+
         private float introStateTime = 3f;
         private float koStateTime = 2f;
         private float endStateTime = 3f;
@@ -102,8 +107,8 @@ namespace Footsies
                 roundUIAnimator = roundUI.GetComponent<Animator>();
             }
         }
-        
-        void FixedUpdate()
+
+        void UpdateLogic()
         {
             switch(_roundState)
             {
@@ -116,11 +121,11 @@ namespace Footsies
 
                     UpdateIntroState();
 
-                    timer -= Time.deltaTime;
-                    if (timer <= 0f)
-                    {
-                        ChangeRoundState(RoundStateType.Fight);
-                    }
+                    // timer -= Time.deltaTime;
+                    // if (timer <= 0f)
+                    // {
+                    ChangeRoundState(RoundStateType.Fight);
+                    // }
 
                     if (debugPlayLastRoundInput
                         && !isReplayingLastRoundInput)
@@ -169,6 +174,21 @@ namespace Footsies
 
                     break;
             }
+        }
+        
+        void FixedUpdate()
+        {
+            if (useGrpcController)
+            {
+                return;
+            }
+            
+            UpdateLogic();
+        }
+
+        public void ManualFixedUpdate()
+        {
+            UpdateLogic();
         }
 
         void ChangeRoundState(RoundStateType state)
@@ -309,10 +329,9 @@ namespace Footsies
             InputData p1Input = new InputData();
 
             // Check if serverp1input is set, if so use it and set it to null
-            if(ServerP1Input != null)
+            if(useGrpcController)
             {
-                p1Input.input = (int)ServerP1Input;
-                ServerP1Input = null;
+                p1Input.input = ServerP1Input.input;
             } else
             {
                 p1Input.input |= InputManager.Instance.GetButton(InputManager.Command.p1Left) ? (int)InputDefine.Left : 0;
@@ -330,6 +349,26 @@ namespace Footsies
             return p1Input;
         }
 
+        public void SetP1InputData(int input)
+        {
+            ServerP1Input = new InputData() { input = input};
+        }
+
+        public void SetP2InputData(int input)
+        {
+            ServerP2Input = new InputData() { input = input};
+        }
+
+        public void ClearP1InputData()
+        {
+            ServerP1Input = null;
+        }
+
+        public void ClearP2InputData()
+        {
+            ServerP2Input = null;
+        }
+
         InputData GetP2InputData()
         {
             if (isReplayingLastRoundInput)
@@ -343,11 +382,10 @@ namespace Footsies
 
 
             // Check if serverp1input is set, if so use it and set it to null
-            if(ServerP2Input != null)
+            if(useGrpcController)
             {
-                p2Input.input = (int)ServerP2Input;
-                ServerP2Input = null;
-            } 
+                p2Input.input = ServerP2Input.input;
+            }
             else if (battleAI != null)
             {
                 p2Input.input |= battleAI.getNextAIInput();
@@ -562,6 +600,21 @@ namespace Footsies
                 return p2FrameLeft - p1FrameLeft;
             else
                 return p1FrameLeft - p2FrameLeft;
+        }
+
+        // Method for gRPC to get the game state
+        public GameState GetGameState()
+        {
+
+            GameState gameState = new GameState()
+            {  
+                RoundState = (ulong)_roundState,
+                Player1 = fighter1.getPlayerState(),
+                Player2 = fighter2.getPlayerState(),
+                FrameCount = (ulong)frameCount,
+            };
+
+            return gameState;
         }
     }
 

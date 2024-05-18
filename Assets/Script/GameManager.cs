@@ -20,6 +20,7 @@ namespace Footsies
 
         private void Awake()
         {
+            Debug.Log("GameManager Awake() called");
             DontDestroyOnLoad(this.gameObject);
 
             Application.targetFrameRate = 60;
@@ -27,6 +28,7 @@ namespace Footsies
 
         private void Start()
         {
+            Debug.Log("GameManager Start() called");
             LoadTitleScene();
         }
 
@@ -61,6 +63,7 @@ namespace Footsies
 
         private void LoadBattleScene()
         {
+            Debug.Log("LoadBattleScene() called");
             SceneManager.LoadScene((int)SceneIndex.Battle);
             currentScene = SceneIndex.Battle;
 
@@ -68,6 +71,19 @@ namespace Footsies
             {
                 SoundManager.Instance.playSE(menuSelectAudioClip);
             }
+        }
+
+        // Public methods for gRPC server to call
+        public void StartGame()
+        {
+            Debug.Log("StartGame called");
+            LoadVsPlayerScene();
+            Debug.Log("LoadVsPlayerScene() called");
+        }
+
+        public void ResetGame()
+        {
+            LoadTitleScene();
         }
     }
 

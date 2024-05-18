@@ -30,7 +30,7 @@ namespace Footsies
             seSource2 = seSourceObject2.GetComponent<AudioSource>();
             bgmSource = bgmSourceObject.GetComponent<AudioSource>();
             defaultBGMVolume = bgmSource.volume;
-            isBGMOn = true;
+            isBGMOn = false;
         }
 
         // Update is called once per frame
