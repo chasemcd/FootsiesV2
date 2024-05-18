@@ -76,9 +76,7 @@ namespace Footsies
         // Public methods for gRPC server to call
         public void StartGame()
         {
-            Debug.Log("StartGame called");
             LoadVsPlayerScene();
-            Debug.Log("LoadVsPlayerScene() called");
         }
 
         public void ResetGame()

@@ -1,9 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using XInputDotNetPure;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+
+#if UNITY_STANDALONE_WIN
+using XInputDotNetPure; // Only include this namespace for Windows builds
+#endif
 
 namespace Footsies
 {
@@ -30,8 +33,10 @@ namespace Footsies
         public class GamePadHelper
         {
             public bool isSet = false;
+#if UNITY_STANDALONE_WIN
             public PlayerIndex playerIndex;
             public GamePadState state;
+#endif
         }
 
         public GamePadHelper[] gamePads = new GamePadHelper[2];
@@ -53,6 +58,7 @@ namespace Footsies
 
         private void Update()
         {
+#if UNITY_STANDALONE_WIN
             UpdateGamePad();
             
             if (IsPadConnected(0))
@@ -86,10 +92,12 @@ namespace Footsies
                     }
                 }
             }
+#endif
         }
 
         public bool GetButton(Command command)
         {
+#if UNITY_STANDALONE_WIN
             if(IsPadConnected(0))
             {
                 if (command == Command.p1Left
@@ -127,6 +135,7 @@ namespace Footsies
                     return true;
                 }
             }
+#endif
 
             return Input.GetButton(GetInputName(command));
         }
@@ -141,6 +150,7 @@ namespace Footsies
             return Input.GetButtonUp(GetInputName(command));
         }
 
+#if UNITY_STANDALONE_WIN
         private bool IsPadConnected(int padNumber)
         {
             if (padNumber >= gamePads.Length)
@@ -151,7 +161,10 @@ namespace Footsies
 
             return true;
         }
+#endif
 
+
+#if UNITY_STANDALONE_WIN
         private void UpdateGamePad()
         {
             for (int i = 0; i < gamePads.Length; i++)
@@ -221,6 +234,7 @@ namespace Footsies
 
             return false;
         }
+#endif
 
         private string GetInputName(Command command)
         {
@@ -245,6 +259,8 @@ namespace Footsies
             return "";
         }
 
+
+#if UNITY_STANDALONE_WIN
         private bool IsXInputUp(GamePadState state)
         {
             if (state.DPad.Up == ButtonState.Pressed)
@@ -288,5 +304,6 @@ namespace Footsies
 
             return false;
         }
+#endif
     }
 }

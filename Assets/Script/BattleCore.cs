@@ -106,10 +106,27 @@ namespace Footsies
             {
                 roundUIAnimator = roundUI.GetComponent<Animator>();
             }
+
+            // If using gRPC controller, skip the into
+            if (useGrpcController)
+            {
+                // Set to Intro to make sure objects are created
+                ChangeRoundState(RoundStateType.Intro);
+
+                // Set NONE server actions
+                ServerP1Input = new InputData() { input = (int)InputDefine.None };
+                ServerP2Input = new InputData() { input = (int)InputDefine.None };
+
+                // Set to Fight to start the game
+                UpdateIntroState();
+                ChangeRoundState(RoundStateType.Fight);
+            }
         }
 
         void UpdateLogic()
         {
+            // Log round state for debugging
+            // Debug.Log("Round State: " + _roundState);
             switch(_roundState)
             {
                 case RoundStateType.Stop:
@@ -121,11 +138,11 @@ namespace Footsies
 
                     UpdateIntroState();
 
-                    // timer -= Time.deltaTime;
-                    // if (timer <= 0f)
-                    // {
+                    timer -= Time.deltaTime;
+                    if (timer <= 0f)
+                    {
                     ChangeRoundState(RoundStateType.Fight);
-                    // }
+                    }
 
                     if (debugPlayLastRoundInput
                         && !isReplayingLastRoundInput)
@@ -608,14 +625,16 @@ namespace Footsies
 
             GameState gameState = new GameState()
             {  
-                RoundState = (ulong)_roundState,
                 Player1 = fighter1.getPlayerState(),
                 Player2 = fighter2.getPlayerState(),
+                RoundState = (ulong)_roundState,
                 FrameCount = (ulong)frameCount,
             };
 
             return gameState;
         }
+
+
     }
 
 }

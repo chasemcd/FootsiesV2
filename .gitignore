@@ -6,6 +6,7 @@
 
 /Assets/AssetStoreTools*
 
+*/.log
 .log
 .vscode
 

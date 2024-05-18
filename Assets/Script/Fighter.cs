@@ -723,6 +723,7 @@ namespace Footsies
         {
             PlayerState playerState = new PlayerState
             {   
+                PlayerPositionX = position.x,
                 IsDead = isDead,
                 VitalHealth = (ulong)vitalHealth,
                 GuardHealth = (ulong)guardHealth,
@@ -738,12 +739,17 @@ namespace Footsies
                 MaxSpriteShakeFrame = (ulong)maxSpriteShakeFrame,
                 VelocityX = velocity_x,
                 IsFaceRight = isFaceRight,
+                PlayerPositionY = position.y,
             };
 
-            playerState.PlayerPosition.Add((ulong)position.x);
-            playerState.PlayerPosition.Add((ulong)position.y);
+            // Iterate over input and add it to the PlayerState.InputBuffer
+            for (int i = 0; i < input.Length; i++)
+            {
+                playerState.InputBuffer.Add((ulong)input[i]);
+            }
 
             return playerState;
         }
+
     }
 }

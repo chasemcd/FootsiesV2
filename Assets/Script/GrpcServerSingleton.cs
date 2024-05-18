@@ -35,9 +35,25 @@ namespace Footsies
             Debug.Log("gRPC server started on port 50051");
         }
 
-        void OnApplicationQuit()
+        private void OnApplicationQuit()
         {
-            server.ShutdownAsync().Wait();
+            OnDomainUnload(null, null);
+        }
+
+        private void OnDomainUnload(object sender, EventArgs e)
+        {
+            if (server != null)
+            {
+                try
+                {
+                    server.ShutdownAsync().Wait();
+                    Debug.Log("gRPC server shut down successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error shutting down gRPC server: {ex}");
+                }
+            }
         }
     }
 
@@ -48,11 +64,10 @@ namespace Footsies
 
         public override Task<Empty> StartGame(Empty request, ServerCallContext context)
         {
-            Debug.Log("StartGame called");
+            // Debug.Log("StartGame called");
     
             try
             {
-                Debug.Log("StartGame called");
                 EnqueueToMainThread(() =>
                 {
                     if (GameManager.Instance == null)
@@ -77,7 +92,7 @@ namespace Footsies
         {
             try
             {
-                Debug.Log("ResetGame called");
+                // Debug.Log("ResetGame called");
                 EnqueueToMainThread(() =>
                 {
                     GameManager.Instance.ResetGame();
@@ -92,11 +107,49 @@ namespace Footsies
             }
         }
 
+        public override Task<BoolValue> IsReady(Empty request, ServerCallContext context)
+        {
+            try
+            {
+                // Debug.Log("IsReady called");
+                var taskCompletionSource = new TaskCompletionSource<BoolValue>();
+
+                EnqueueToMainThread(() =>
+                {
+
+                    if (battleCore == null)
+                    {
+                        battleCore = GameObject.FindObjectOfType<BattleCore>();
+                    }
+
+                    bool isReady = CheckIfReady(); // Implement this method to check readiness
+                    taskCompletionSource.SetResult(new BoolValue { Value = isReady });
+                });
+
+                return taskCompletionSource.Task;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"IsReady exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, "Exception was thrown by handler."));
+            }
+        }
+
+        private bool CheckIfReady()
+        {
+            // Implement the logic to determine if the server/game is ready
+            // For example, check if the game manager and battle core are initialized
+            // Debug.Log("CheckIfReady called");
+            // Debug.Log("Game Manager: " + (GameManager.Instance != null ? "Ready" : "Not Ready"));
+            // Debug.Log("Battle Core: " + (battleCore != null ? "Ready" : "Not Ready"));
+            return GameManager.Instance != null && battleCore != null;
+        }
+
         public override Task<GameState> StepNFrames(StepInput request, ServerCallContext context)
         {
             try
             {
-                Debug.Log($"StepNFrames called with p1_action: {request.P1Action}, p2_action: {request.P2Action}, nFrames: {request.NFrames}");
+                // Debug.Log($"StepNFrames called with p1_action: {request.P1Action}, p2_action: {request.P2Action}, nFrames: {request.NFrames}");
                 var taskCompletionSource = new TaskCompletionSource<GameState>();
 
                 EnqueueToMainThread(() =>
@@ -143,6 +196,7 @@ namespace Footsies
                     taskCompletionSource.SetResult(gameState);
                 });
 
+                // LogGameState(taskCompletionSource.Task.Result);
                 return taskCompletionSource.Task;
             }
             catch (Exception ex)
@@ -152,11 +206,12 @@ namespace Footsies
             }
         }
 
+
         public override Task<GameState> GetState(Empty request, ServerCallContext context)
         {
             try
             {
-                Debug.Log("GetState called");
+                // Debug.Log("GetState called");
                 var taskCompletionSource = new TaskCompletionSource<GameState>();
 
                 EnqueueToMainThread(() =>
@@ -188,6 +243,35 @@ namespace Footsies
         private void EnqueueToMainThread(Action action)
         {
             UnityMainThreadDispatcher.Instance.Enqueue(action);
+        }
+
+        private void LogGameState(GameState gameState)
+        {
+            Debug.Log($"GameState - FrameCount: {gameState.FrameCount}, RoundState: {gameState.RoundState}");
+            LogPlayerState("Player 1", gameState.Player1);
+            LogPlayerState("Player 2", gameState.Player2);
+        }
+
+        private void LogPlayerState(string playerName, PlayerState playerState)
+        {
+            Debug.Log($"{playerName} - Position: ({playerState.PlayerPositionX}, {playerState.PlayerPositionY}), " +
+                $"IsDead: {playerState.IsDead} ({playerState.IsDead.GetType()}), " +
+                $"VitalHealth: {playerState.VitalHealth} ({playerState.VitalHealth.GetType()}), " +
+                $"GuardHealth: {playerState.GuardHealth} ({playerState.GuardHealth.GetType()}), " +
+                $"CurrentActionID: {playerState.CurrentActionId} ({playerState.CurrentActionId.GetType()}), " +
+                $"CurrentActionFrame: {playerState.CurrentActionFrame} ({playerState.CurrentActionFrame.GetType()}), " +
+                $"CurrentActionFrameCount: {playerState.CurrentActionFrameCount} ({playerState.CurrentActionFrameCount.GetType()}), " +
+                $"IsActionEnd: {playerState.IsActionEnd} ({playerState.IsActionEnd.GetType()}), " +
+                $"IsAlwaysCancelable: {playerState.IsAlwaysCancelable} ({playerState.IsAlwaysCancelable.GetType()}), " +
+                $"CurrentActionHitCount: {playerState.CurrentActionHitCount} ({playerState.CurrentActionHitCount.GetType()}), " +
+                $"CurrentHitStunFrame: {playerState.CurrentHitStunFrame} ({playerState.CurrentHitStunFrame.GetType()}), " +
+                $"IsInHitStun: {playerState.IsInHitStun} ({playerState.IsInHitStun.GetType()}), " +
+                $"SpriteShakePosition: {playerState.SpriteShakePosition} ({playerState.SpriteShakePosition.GetType()}), " +
+                $"MaxSpriteShakeFrame: {playerState.MaxSpriteShakeFrame} ({playerState.MaxSpriteShakeFrame.GetType()}), " +
+                $"VelocityX: {playerState.VelocityX} ({playerState.VelocityX.GetType()}), " +
+                $"IsFaceRight: {playerState.IsFaceRight} ({playerState.IsFaceRight.GetType()}), " +
+                $"PlayerPositionY: {playerState.PlayerPositionY} ({playerState.PlayerPositionY.GetType()}), " +
+                $"InputBuffer: [{string.Join(", ", playerState.InputBuffer)}] ({playerState.InputBuffer.GetType()})");
         }
     }
 }

@@ -50,6 +50,8 @@ public static partial class FootsiesGameService
   static readonly grpc::Marshaller<global::StepInput> __Marshaller_StepInput = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::StepInput.Parser));
   [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
   static readonly grpc::Marshaller<global::GameState> __Marshaller_GameState = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::GameState.Parser));
+  [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+  static readonly grpc::Marshaller<global::BoolValue> __Marshaller_BoolValue = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::BoolValue.Parser));
 
   [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
   static readonly grpc::Method<global::Empty, global::Empty> __Method_StartGame = new grpc::Method<global::Empty, global::Empty>(
@@ -83,6 +85,14 @@ public static partial class FootsiesGameService
       __Marshaller_Empty,
       __Marshaller_GameState);
 
+  [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+  static readonly grpc::Method<global::Empty, global::BoolValue> __Method_IsReady = new grpc::Method<global::Empty, global::BoolValue>(
+      grpc::MethodType.Unary,
+      __ServiceName,
+      "IsReady",
+      __Marshaller_Empty,
+      __Marshaller_BoolValue);
+
   /// <summary>Service descriptor</summary>
   public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
   {
@@ -113,6 +123,12 @@ public static partial class FootsiesGameService
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     public virtual global::System.Threading.Tasks.Task<global::GameState> GetState(global::Empty request, grpc::ServerCallContext context)
+    {
+      throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
+    }
+
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    public virtual global::System.Threading.Tasks.Task<global::BoolValue> IsReady(global::Empty request, grpc::ServerCallContext context)
     {
       throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
     }
@@ -226,6 +242,26 @@ public static partial class FootsiesGameService
     {
       return CallInvoker.AsyncUnaryCall(__Method_GetState, null, options, request);
     }
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    public virtual global::BoolValue IsReady(global::Empty request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+    {
+      return IsReady(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+    }
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    public virtual global::BoolValue IsReady(global::Empty request, grpc::CallOptions options)
+    {
+      return CallInvoker.BlockingUnaryCall(__Method_IsReady, null, options, request);
+    }
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    public virtual grpc::AsyncUnaryCall<global::BoolValue> IsReadyAsync(global::Empty request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+    {
+      return IsReadyAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+    }
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    public virtual grpc::AsyncUnaryCall<global::BoolValue> IsReadyAsync(global::Empty request, grpc::CallOptions options)
+    {
+      return CallInvoker.AsyncUnaryCall(__Method_IsReady, null, options, request);
+    }
     /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     protected override FootsiesGameServiceClient NewInstance(ClientBaseConfiguration configuration)
@@ -243,7 +279,8 @@ public static partial class FootsiesGameService
         .AddMethod(__Method_StartGame, serviceImpl.StartGame)
         .AddMethod(__Method_ResetGame, serviceImpl.ResetGame)
         .AddMethod(__Method_StepNFrames, serviceImpl.StepNFrames)
-        .AddMethod(__Method_GetState, serviceImpl.GetState).Build();
+        .AddMethod(__Method_GetState, serviceImpl.GetState)
+        .AddMethod(__Method_IsReady, serviceImpl.IsReady).Build();
   }
 
   /// <summary>Register service method with a service binder with or without implementation. Useful when customizing the service binding logic.
@@ -257,6 +294,7 @@ public static partial class FootsiesGameService
     serviceBinder.AddMethod(__Method_ResetGame, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Empty, global::Empty>(serviceImpl.ResetGame));
     serviceBinder.AddMethod(__Method_StepNFrames, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::StepInput, global::GameState>(serviceImpl.StepNFrames));
     serviceBinder.AddMethod(__Method_GetState, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Empty, global::GameState>(serviceImpl.GetState));
+    serviceBinder.AddMethod(__Method_IsReady, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Empty, global::BoolValue>(serviceImpl.IsReady));
   }
 
 }
