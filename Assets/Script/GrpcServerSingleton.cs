@@ -26,13 +26,34 @@ namespace Footsies
 
         void StartServer()
         {
+
+            string host = "localhost";
+            int port = 50051;
+
+            // Read CLI arguments
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--host" && i + 1 < args.Length)
+                {
+                    host = args[i + 1];
+                }
+                if (args[i] == "--port" && i + 1 < args.Length)
+                {
+                    if (int.TryParse(args[i + 1], out int parsedPort))
+                    {
+                        port = parsedPort;
+                    }
+                }
+            }
+            
             server = new Server
             {
                 Services = { FootsiesGameService.BindService(new FootsiesGameServiceImpl()) },
-                Ports = { new ServerPort("localhost", 50051, ServerCredentials.Insecure) }
+                Ports = { new ServerPort(host, port, ServerCredentials.Insecure) }
             };
             server.Start();
-            Debug.Log("gRPC server started on port 50051");
+            Debug.Log($"gRPC server started on {host}:{port}");
         }
 
         private void OnApplicationQuit()
@@ -65,7 +86,7 @@ namespace Footsies
         public override Task<Empty> StartGame(Empty request, ServerCallContext context)
         {
             // Debug.Log("StartGame called");
-    
+            
             try
             {
                 EnqueueToMainThread(() =>
