@@ -82,17 +82,19 @@ namespace Footsies
 
         public bool isDebugPause { get; private set; }
 
-
-        // TODO(chase): set this to False by default and enable only with gRPC. 
-        public bool useGrpcController = true;
+        private bool useGrpcController = false;
 
         private float introStateTime = 3f;
         private float koStateTime = 2f;
         private float endStateTime = 3f;
         private float endStateSkippableTime = 1.5f;
 
+        public bool IsUsingGrpcController => useGrpcController;
+
         void Awake()
         {
+            ParseCommandLineArgs();
+
             // Setup dictionary from ScriptableObject data
             fighterDataList.ForEach((data) => data.setupDictionary());
 
@@ -120,6 +122,20 @@ namespace Footsies
                 // Set to Fight to start the game
                 UpdateIntroState();
                 ChangeRoundState(RoundStateType.Fight);
+            }
+        }
+
+        private void ParseCommandLineArgs()
+        {
+            string[] args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--grpc" || args[i] == "-g")
+                {
+                    useGrpcController = true;
+                    Debug.Log("gRPC controller enabled via command line");
+                    break;
+                }
             }
         }
 

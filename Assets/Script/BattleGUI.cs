@@ -57,8 +57,6 @@ namespace Footsies
         private Animator hitEffectAnimator1;
         private Animator hitEffectAnimator2;
 
-        public bool useGrpcController = true;
-
         #endregion
 
         private void Awake()
@@ -94,7 +92,7 @@ namespace Footsies
                 drawDebug = !drawDebug;
             }
 
-            if (useGrpcController)
+            if (battleCore.IsUsingGrpcController)
             {
                 return;
             }
