@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Unity.Barracuda;
 
 namespace Footsies
 {
@@ -17,6 +18,10 @@ namespace Footsies
 
         public SceneIndex currentScene { get; private set; }
         public bool isVsCPU { get; private set; }
+
+        [SerializeField]
+        public NNModel barracudaModel;
+
 
         private void Awake()
         {

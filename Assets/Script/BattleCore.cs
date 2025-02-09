@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Serialization;
+using Unity.Barracuda;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -68,6 +69,8 @@ namespace Footsies
         private Animator roundUIAnimator;
 
         private BattleAI battleAI = null;
+        private BattleAIBarracuda barracudaAI = null;
+        [SerializeField] 
 
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
         private InputData[] recordingP1Input = new InputData[maxRecordingInputFrame];
@@ -248,7 +251,20 @@ namespace Footsies
                     roundUIAnimator.SetTrigger("RoundStart");
 
                     if (GameManager.Instance.isVsCPU)
-                        battleAI = new BattleAI(this);
+                        // TODO(chase): Make this configurable!
+                        // battleAI = new BattleAI(this);
+                        // Create the AI instance
+                        barracudaAI = new BattleAIBarracuda(this);
+                        
+                        // Check if we have a model assigned
+                        if (GameManager.Instance.barracudaModel == null)
+                        {
+                            Debug.LogError("Barracuda model not assigned! Please assign it in the Unity Inspector.");
+                            return;
+                        }
+                        
+                        // Initialize with the model
+                        barracudaAI.Initialize(GameManager.Instance.barracudaModel);
 
                     break;
                 case RoundStateType.Fight:
@@ -269,6 +285,7 @@ namespace Footsies
                     fighter2.ClearInput();
 
                     battleAI = null;
+                    barracudaAI = null;
 
                     roundUIAnimator.SetTrigger("RoundEnd");
 
@@ -418,10 +435,12 @@ namespace Footsies
             if(useGrpcController)
             {
                 p2Input.input = ServerP2Input.input;
+
             }
-            else if (battleAI != null)
+            else if (barracudaAI != null)
             {
-                p2Input.input |= battleAI.getNextAIInput();
+                // p2Input.input |= battleAI.getNextAIInput();
+                p2Input.input |= barracudaAI.getNextAIInput(false);
             }
             else
             {

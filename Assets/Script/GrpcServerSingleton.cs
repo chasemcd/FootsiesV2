@@ -1,7 +1,9 @@
 using System;
 using UnityEngine;
-using Grpc.Core;
 using System.Threading.Tasks;
+
+#if !UNITY_WEBGL
+using Grpc.Core;
 
 namespace Footsies
 {
@@ -296,3 +298,26 @@ namespace Footsies
         }
     }
 }
+#else
+namespace Footsies
+{
+    public class GrpcServerSingleton : Singleton<GrpcServerSingleton>
+    {
+        private static GrpcServerSingleton instance;
+
+        private void Awake()
+        {
+            if (instance == null)
+            {
+                instance = this;
+                DontDestroyOnLoad(gameObject);
+                Debug.Log("WebGL build - gRPC server disabled");
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
+}
+#endif

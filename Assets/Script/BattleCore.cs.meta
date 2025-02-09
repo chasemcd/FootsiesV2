@@ -3,7 +3,10 @@ guid: 2fbfdaeb55d379442a0e7bed580d8a47
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - roundUI: {instanceID: 0}
+  - barracudaModel: {fileID: 5022602860645237092, guid: af20cff42d3deb94891b4de88aa07a33,
+      type: 3}
   executionOrder: 300
   icon: {instanceID: 0}
   userData: 
