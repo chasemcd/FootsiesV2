@@ -285,6 +285,7 @@ namespace Footsies
                     fighter2.ClearInput();
 
                     battleAI = null;
+                    barracudaAI.Dispose();
                     barracudaAI = null;
 
                     roundUIAnimator.SetTrigger("RoundEnd");

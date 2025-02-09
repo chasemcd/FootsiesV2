@@ -65,20 +65,6 @@ namespace Footsies
 
         public bool IsInitialized => m_RuntimeModel != null;
 
-        public void Dispose()
-        {
-            // Clean up tensors
-            foreach (var tensor in lastHiddenStates.Values)
-            {
-                tensor.Dispose();
-            }
-            foreach (var tensor in lastCellStates.Values)
-            {
-                tensor.Dispose();
-            }
-            worker?.Dispose();
-        }
-
         public Tensor encodeGameState(GameState gameState, bool isPlayer1)
         {
             // Create tensor with shape [1, OBSERVATION_SIZE] for batch size 1
@@ -86,7 +72,7 @@ namespace Footsies
             int currentIndex = 0;
 
             // Encode common state (frame count)
-            encodedState[currentIndex++] = Mathf.Min(gameState.FrameCount, 1000000) / 1000f;
+            encodedState[currentIndex++] = gameState.FrameCount < 1000000 ? gameState.FrameCount / 1000f : 0f;
 
             // Encode states in order [current_player, opponent]
             if (isPlayer1)
@@ -102,7 +88,8 @@ namespace Footsies
                 currentIndex = encodePlayerState(gameState.Player1, encodedState, currentIndex);
             }
 
-            return new Tensor(1, OBSERVATION_SIZE, 1, 1, encodedState);
+            // Return tensor with shape [B*T, INPUT_SHAPE] = [1, OBSERVATION_SIZE]
+            return new Tensor(1, OBSERVATION_SIZE, encodedState);
         }
 
         private int encodePlayerState(PlayerState playerState, float[] encodedState, int startIndex)
@@ -167,7 +154,9 @@ namespace Footsies
             var inputs = new Dictionary<string, Tensor>();
             
             // Add encoded state
-            inputs["obs"] = encodeGameState(gameState, isPlayer1);
+            var encodedState = encodeGameState(gameState, isPlayer1);
+            inputs["obs"] = encodedState;
+            // Debug.Log($"Observation tensor shape: {inputs["obs"].shape}, Values: [{string.Join(", ", inputs["obs"].AsFloats().Select(x => x.ToString("F4")))}]");
             
             // Add previous hidden/cell states
             if (lastHiddenStates.ContainsKey(isPlayer1) && lastCellStates.ContainsKey(isPlayer1)) {
@@ -183,16 +172,18 @@ namespace Footsies
 
             var output = worker.Execute(inputs);
 
-            // Get logits and states from the correct output names
-            var logits = output.PeekOutput("output").AsFloats();
-            lastCellStates[isPlayer1] = output.PeekOutput("state_out_0");
-            lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1");
-
             // Clean up input tensors
             foreach (var tensor in inputs.Values)
             {
                 tensor.Dispose();
             }
+            lastCellStates[isPlayer1].Dispose();
+            lastHiddenStates[isPlayer1].Dispose();
+
+            // Get logits and states from the correct output names
+            var logits = output.PeekOutput("output").AsFloats();
+            lastCellStates[isPlayer1] = output.CopyOutput("state_out_0");
+            lastHiddenStates[isPlayer1] = output.CopyOutput("state_out_1");
 
             // Apply softmax and sample
             // Log logits to console
@@ -274,6 +265,29 @@ namespace Footsies
             }
 
             return actionQueue[isPlayer1].Dequeue();
+        }
+
+        public void Dispose()
+        {
+            // Dispose of worker
+            if (worker != null)
+            {
+                worker.Dispose();
+                worker = null;
+            }
+
+            // Dispose of hidden and cell states
+            foreach (var tensor in lastHiddenStates.Values)
+            {
+                tensor.Dispose();
+            }
+            lastHiddenStates.Clear();
+
+            foreach (var tensor in lastCellStates.Values)
+            {
+                tensor.Dispose();
+            }
+            lastCellStates.Clear();
         }
     }
 }
