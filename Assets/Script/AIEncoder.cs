@@ -10,6 +10,28 @@ namespace Footsies
         private const float FRAME_SCALE = 25.0f;
         private const float HIT_STUN_SCALE = 10.0f;
 
+        // Action ID mapping to consecutive integers
+        private static readonly Dictionary<CommonActionID, int> ACTION_ID_MAP = new Dictionary<CommonActionID, int>
+        {
+            { CommonActionID.STAND, 0 },
+            { CommonActionID.FORWARD, 1 },
+            { CommonActionID.BACKWARD, 2 },
+            { CommonActionID.DASH_FORWARD, 3 },
+            { CommonActionID.DASH_BACKWARD, 4 },
+            { CommonActionID.N_ATTACK, 5 },
+            { CommonActionID.B_ATTACK, 6 },
+            { CommonActionID.N_SPECIAL, 7 },
+            { CommonActionID.B_SPECIAL, 8 },
+            { CommonActionID.DAMAGE, 9 },
+            { CommonActionID.GUARD_M, 10 },
+            { CommonActionID.GUARD_STAND, 11 },
+            { CommonActionID.GUARD_CROUCH, 12 },
+            { CommonActionID.GUARD_BREAK, 13 },
+            { CommonActionID.GUARD_PROXIMITY, 14 },
+            { CommonActionID.DEAD, 15 },
+            { CommonActionID.WIN, 16 }
+        };
+
         public static int ObservationSize => 2234; // Kept for compatibility
 
         public float[] EncodeGameState(GameState gameState, bool isPlayer1)
@@ -52,9 +74,11 @@ namespace Footsies
 
             // Action ID one-hot encoding
             int actionIdCount = System.Enum.GetValues(typeof(CommonActionID)).Length;
-            for (int i = 0; i < actionIdCount; i++)
+            for (ulong i = 0; i < (ulong)actionIdCount; i++)
             {
-                features.Add((playerState.CurrentActionId == (ulong)i) ? 1f : 0f);
+                var mappedActionId = ACTION_ID_MAP.ContainsKey((CommonActionID)playerState.CurrentActionId) ? 
+                    ACTION_ID_MAP[(CommonActionID)playerState.CurrentActionId] : 0;
+                features.Add((mappedActionId == (int)i) ? 1f : 0f);
             }
 
             // Action frames

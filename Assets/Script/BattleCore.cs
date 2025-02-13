@@ -85,7 +85,7 @@ namespace Footsies
 
         public bool isDebugPause { get; private set; }
 
-        private bool useGrpcController = false;
+        private bool useGrpcController = true;
 
         private float introStateTime = 3f;
         private float koStateTime = 2f;
@@ -286,8 +286,11 @@ namespace Footsies
                     fighter2.ClearInput();
 
                     battleAI = null;
-                    barracudaAI.Dispose();
-                    barracudaAI = null;
+                    if (barracudaAI != null)
+                    {
+                        barracudaAI.Dispose();
+                        barracudaAI = null;
+                    }
 
                     roundUIAnimator.SetTrigger("RoundEnd");
 
