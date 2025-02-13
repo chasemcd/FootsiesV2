@@ -91,6 +91,7 @@ namespace Footsies
         public bool isAlwaysCancelable { get { return fighterData.actions[currentActionID].alwaysCancelable; } }
         
         public int currentActionHitCount{ get; private set; }
+        public int currentFrameAdvantage { get; set; }
 
         public int currentHitStunFrame { get; private set; }
         public bool isInHitStun { get { return currentHitStunFrame > 0; } }
@@ -740,6 +741,7 @@ namespace Footsies
                 VelocityX = velocity_x,
                 IsFaceRight = isFaceRight,
                 PlayerPositionY = position.y,
+                CurrentFrameAdvantage = (ulong)currentFrameAdvantage,
             };
 
             // Iterate over input and add it to the PlayerState.InputBuffer

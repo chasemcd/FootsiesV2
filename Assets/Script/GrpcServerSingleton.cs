@@ -263,6 +263,38 @@ namespace Footsies
             }            
         }
 
+        public override Task<EncodedGameState> GetEncodedState(Empty request, ServerCallContext context)
+        {
+            try
+            {
+                var taskCompletionSource = new TaskCompletionSource<EncodedGameState>();
+
+                EnqueueToMainThread(() =>
+                {
+                    if (battleCore == null)
+                    {
+                        battleCore = GameObject.FindObjectOfType<BattleCore>();
+                        if (battleCore == null)
+                        {
+                            Debug.LogError("BattleCore not found during GetEncodedState.");
+                            taskCompletionSource.SetResult(new EncodedGameState()); // Return an empty state or handle the error as needed
+                            return;
+                        }
+                    }
+
+                    EncodedGameState encodedGameState = battleCore.GetEncodedGameState();
+                    taskCompletionSource.SetResult(encodedGameState);
+                });
+
+                return taskCompletionSource.Task;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"GetEncodedState exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, "Exception was thrown by handler."));
+            }            
+        }
+
         private void EnqueueToMainThread(Action action)
         {
             UnityMainThreadDispatcher.Instance.Enqueue(action);

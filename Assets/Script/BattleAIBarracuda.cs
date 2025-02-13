@@ -10,6 +10,7 @@ namespace Footsies
     {
 
         private BattleCore battleCore;
+        private AIEncoder encoder;
 
         public NNModel modelAsset;
         private Model m_RuntimeModel;
@@ -19,16 +20,10 @@ namespace Footsies
         private Dictionary<bool, Tensor> lastCellStates = new Dictionary<bool, Tensor>();
         private const int STATE_SIZE = 128;
 
-        private const int OBSERVATION_SIZE = 2597;
-        private const float POSITION_SCALE = 2.0f;
-        private const float VELOCITY_SCALE = 5.0f;
-        private const float FRAME_SCALE = 25.0f;
-        private const float HIT_STUN_SCALE = 10.0f;
-
         private const int FRAME_SKIP = 4;
 
         // Add new fields for special charge tracking
-        private Dictionary<bool, int> specialChargeQueue = new Dictionary<bool, int>();
+        public Dictionary<bool, int> specialChargeQueue = new Dictionary<bool, int>();
         private const int SPECIAL_CHARGE_DURATION = 60 / FRAME_SKIP;
 
         // Add new field for action queue
@@ -37,6 +32,7 @@ namespace Footsies
         public BattleAIBarracuda(BattleCore core)
         {
             battleCore = core;
+            encoder = new AIEncoder();
             // Don't load the model here - wait until it's assigned
             
             // Initialize states
@@ -67,78 +63,8 @@ namespace Footsies
 
         public Tensor encodeGameState(GameState gameState, bool isPlayer1)
         {
-            // Create tensor with shape [1, OBSERVATION_SIZE] for batch size 1
-            float[] encodedState = new float[OBSERVATION_SIZE];
-            int currentIndex = 0;
-
-            // Encode common state (frame count)
-            encodedState[currentIndex++] = gameState.FrameCount < 1000000 ? gameState.FrameCount / 1000f : 0f;
-
-            // Encode states in order [current_player, opponent]
-            if (isPlayer1)
-            {
-                // Player 1 perspective: [common, p1, p2]
-                currentIndex = encodePlayerState(gameState.Player1, encodedState, currentIndex);
-                currentIndex = encodePlayerState(gameState.Player2, encodedState, currentIndex);
-            }
-            else
-            {
-                // Player 2 perspective: [common, p2, p1]
-                currentIndex = encodePlayerState(gameState.Player2, encodedState, currentIndex);
-                currentIndex = encodePlayerState(gameState.Player1, encodedState, currentIndex);
-            }
-
-            // Return tensor with shape [B*T, INPUT_SHAPE] = [1, OBSERVATION_SIZE]
-            return new Tensor(1, OBSERVATION_SIZE, encodedState);
-        }
-
-        private int encodePlayerState(PlayerState playerState, float[] encodedState, int startIndex)
-        {
-            int index = startIndex;
-
-            // Position and velocity
-            encodedState[index++] = playerState.PlayerPositionX / POSITION_SCALE;
-            encodedState[index++] = playerState.PlayerPositionY / POSITION_SCALE;
-            encodedState[index++] = playerState.VelocityX / VELOCITY_SCALE;
-
-            // Basic state
-            encodedState[index++] = playerState.IsDead ? 1f : 0f;
-            encodedState[index++] = playerState.VitalHealth;
-
-            // Guard health one-hot encoding
-            for (int i = 0; i < 4; i++)
-                encodedState[index++] = (playerState.GuardHealth == (ulong)i) ? 1f : 0f;
-
-            // Action ID one-hot encoding
-            int actionIdCount = System.Enum.GetValues(typeof(CommonActionID)).Length;
-            for (int i = 0; i < actionIdCount; i++)
-                encodedState[index++] = (playerState.CurrentActionId == (ulong)i) ? 1f : 0f;
-
-            // Action frames
-            encodedState[index++] = playerState.CurrentActionFrame / FRAME_SCALE;
-            encodedState[index++] = playerState.CurrentActionFrameCount / FRAME_SCALE;
-            encodedState[index++] = (playerState.CurrentActionFrameCount - playerState.CurrentActionFrame) / FRAME_SCALE;
-
-            // Action state
-            encodedState[index++] = playerState.IsActionEnd ? 1f : 0f;
-            encodedState[index++] = playerState.IsAlwaysCancelable ? 1f : 0f;
-            encodedState[index++] = playerState.CurrentActionHitCount;
-            encodedState[index++] = playerState.CurrentHitStunFrame / HIT_STUN_SCALE;
-            encodedState[index++] = playerState.IsInHitStun ? 1f : 0f;
-            encodedState[index++] = playerState.SpriteShakePosition;
-            encodedState[index++] = playerState.MaxSpriteShakeFrame / HIT_STUN_SCALE;
-            encodedState[index++] = playerState.IsFaceRight ? 1f : 0f;
-
-            // Input buffer encoding
-            // Each input uses 7 positions (len(ACTION_TO_BITS) + 1), and we encode each buffer entry sequentially
-            foreach (int input in playerState.InputBuffer)
-            {
-                int baseIndex = index;  // Start of current input's encoding block
-                encodedState[baseIndex + input] = 1f;  // Set the corresponding bit to 1
-                index += 7;  // Move to next input's encoding block
-            }
-
-            return index;
+            float[] encodedState = encoder.EncodeGameState(gameState, isPlayer1);
+            return new Tensor(1, AIEncoder.ObservationSize, encodedState);
         }
 
         public int getNextAIInput(bool isPlayer1)
@@ -212,7 +138,7 @@ namespace Footsies
             }
             
             // Handle special charge queue
-            bool queueEmpty = specialChargeQueue[isPlayer1] == 0;
+            bool queueEmpty = specialChargeQueue[isPlayer1] <= 0;
             bool isSpecialCharge = selectedAction == 6; // SPECIAL_CHARGE
 
             // Refill charge queue only if we're not already in a special charge
@@ -254,7 +180,7 @@ namespace Footsies
             // Apply special charge effect
             if (specialChargeQueue[isPlayer1] > 0)
             {
-                specialChargeQueue[isPlayer1]--;
+                specialChargeQueue[isPlayer1] -= FRAME_SKIP;
                 actionBits |= (1 << 2); // Add ATTACK bit
             }
 

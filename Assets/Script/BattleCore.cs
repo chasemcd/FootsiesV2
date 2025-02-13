@@ -71,7 +71,7 @@ namespace Footsies
         private BattleAI battleAI = null;
         private BattleAIBarracuda barracudaAI = null;
         [SerializeField] 
-
+        private AIEncoder encoder = new AIEncoder();
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
         private InputData[] recordingP1Input = new InputData[maxRecordingInputFrame];
         private InputData[] recordingP2Input = new InputData[maxRecordingInputFrame];
@@ -251,6 +251,7 @@ namespace Footsies
                     roundUIAnimator.SetTrigger("RoundStart");
 
                     if (GameManager.Instance.isVsCPU)
+
                         // TODO(chase): Make this configurable!
                         // battleAI = new BattleAI(this);
                         // Create the AI instance
@@ -264,7 +265,7 @@ namespace Footsies
                         }
                         
                         // Initialize with the model
-                        barracudaAI.Initialize(GameManager.Instance.barracudaModel);
+                        // barracudaAI.Initialize(GameManager.Instance.barracudaModel);
 
                     break;
                 case RoundStateType.Fight:
@@ -339,6 +340,9 @@ namespace Footsies
             RecordInput(p1Input, p2Input);
             fighter1.UpdateInput(p1Input);
             fighter2.UpdateInput(p2Input);
+
+            fighter1.currentFrameAdvantage = GetFrameAdvantage(true);
+            fighter2.currentFrameAdvantage = GetFrameAdvantage(false);
 
             _fighters.ForEach((f) => f.IncrementActionFrame());
 
@@ -670,6 +674,16 @@ namespace Footsies
             return gameState;
         }
 
+        public EncodedGameState GetEncodedGameState()
+        {
+            EncodedGameState encodedGameState = new EncodedGameState();
+            
+            // Use AddRange to add elements to the repeated fields
+            encodedGameState.Player1Encoding.AddRange(encoder.EncodeGameState(GetGameState(), true));
+            encodedGameState.Player2Encoding.AddRange(encoder.EncodeGameState(GetGameState(), false));
+
+            return encodedGameState;
+        }
 
     }
 
