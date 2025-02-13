@@ -583,6 +583,24 @@ namespace Footsies
             return true;
         }
 
+        private float GetSpecialAttackProgress()
+        {
+
+            // Count how many consecutive frames the attack has been held
+            int heldFrames = 0; 
+            for (int i = 0; i < fighterData.specialAttackHoldFrame; i++)
+            {
+                if (!IsAttackInput(input[i]))
+                    break;
+                heldFrames++;
+            }
+
+            // Return progress as a percentage (0.0 to 1.0)
+            return (float)heldFrames / fighterData.specialAttackHoldFrame;
+        }
+
+
+
         private bool CheckForwardDashInput()
         {
             if (!IsForwardInput(inputDown[0]))
@@ -634,6 +652,66 @@ namespace Footsies
 
             return false;
         }
+
+
+        private bool WouldNextForwardInputDash()
+        {
+            // Check if there was a recent forward input within the dash window
+            for (int i = 0; i < fighterData.dashAllowFrame - 1; i++)
+            {
+                // If we find a backward input, it would prevent the dash
+                if (IsBackwardInput(input[i]))
+                {
+                    return false;
+                }
+
+                // If we find a forward input followed by neutral
+                if (IsForwardInput(input[i]))
+                {
+                    // Check if there's a neutral input after the forward
+                    for (int j = i + 1; j < i + fighterData.dashAllowFrame; j++)
+                    {
+                        if (!IsForwardInput(input[j]) && !IsBackwardInput(input[j]))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private bool WouldNextBackwardInputDash()
+        {
+            // Check if there was a recent backward input within the dash window
+            for (int i = 0; i < fighterData.dashAllowFrame - 1; i++)
+            {
+                // If we find a forward input, it would prevent the dash
+                if (IsForwardInput(input[i]))
+                {
+                    return false;
+                }
+
+                // If we find a backward input followed by neutral
+                if (IsBackwardInput(input[i]))
+                {
+                    // Check if there's a neutral input after the backward
+                    for (int j = i + 1; j < i + fighterData.dashAllowFrame; j++)
+                    {
+                        if (!IsForwardInput(input[j]) && !IsBackwardInput(input[j]))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
 
         private bool IsAttackInput(int input)
         {
@@ -719,7 +797,7 @@ namespace Footsies
 
 
         // For gRPC
-
+        // TODO(chase): add special attack progress and dash indicators
         public PlayerState getPlayerState()
         {
             PlayerState playerState = new PlayerState
@@ -753,5 +831,4 @@ namespace Footsies
             return playerState;
         }
 
-    }
-}
+
