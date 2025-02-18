@@ -309,7 +309,7 @@ namespace Footsies
 
         private void LogPlayerState(string playerName, PlayerState playerState)
         {
-            Debug.Log($"{playerName} - Position: ({playerState.PlayerPositionX}, {playerState.PlayerPositionY}), " +
+            Debug.Log($"{playerName} - Position: ({playerState.PlayerPositionX}, " +
                 $"IsDead: {playerState.IsDead} ({playerState.IsDead.GetType()}), " +
                 $"VitalHealth: {playerState.VitalHealth} ({playerState.VitalHealth.GetType()}), " +
                 $"GuardHealth: {playerState.GuardHealth} ({playerState.GuardHealth.GetType()}), " +
@@ -325,7 +325,6 @@ namespace Footsies
                 $"MaxSpriteShakeFrame: {playerState.MaxSpriteShakeFrame} ({playerState.MaxSpriteShakeFrame.GetType()}), " +
                 $"VelocityX: {playerState.VelocityX} ({playerState.VelocityX.GetType()}), " +
                 $"IsFaceRight: {playerState.IsFaceRight} ({playerState.IsFaceRight.GetType()}), " +
-                $"PlayerPositionY: {playerState.PlayerPositionY} ({playerState.PlayerPositionY.GetType()}), " +
                 $"InputBuffer: [{string.Join(", ", playerState.InputBuffer)}] ({playerState.InputBuffer.GetType()})");
         }
     }
