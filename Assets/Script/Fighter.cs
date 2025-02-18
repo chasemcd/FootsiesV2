@@ -804,31 +804,35 @@ namespace Footsies
             {   
                 PlayerPositionX = position.x,
                 IsDead = isDead,
-                VitalHealth = (ulong)vitalHealth,
-                GuardHealth = (ulong)guardHealth,
-                CurrentActionId = (ulong)currentActionID,
-                CurrentActionFrame = (ulong)currentActionFrame,
-                CurrentActionFrameCount = (ulong)currentActionFrameCount,
+                VitalHealth = vitalHealth,
+                GuardHealth = guardHealth,
+                CurrentActionId = currentActionID,
+                CurrentActionFrame = currentActionFrame,
+                CurrentActionFrameCount = currentActionFrameCount,
                 IsActionEnd = isActionEnd,
                 IsAlwaysCancelable = fighterData.actions[currentActionID].alwaysCancelable,
-                CurrentActionHitCount = (ulong)currentActionHitCount,
-                CurrentHitStunFrame = (ulong)currentHitStunFrame,
+                CurrentActionHitCount = currentActionHitCount,
+                CurrentHitStunFrame = currentHitStunFrame,
                 IsInHitStun = isInHitStun,
-                SpriteShakePosition = (ulong)spriteShakePosition,
-                MaxSpriteShakeFrame = (ulong)maxSpriteShakeFrame,
+                SpriteShakePosition = spriteShakePosition,
+                MaxSpriteShakeFrame = maxSpriteShakeFrame,
                 VelocityX = velocity_x,
                 IsFaceRight = isFaceRight,
-                PlayerPositionY = position.y,
-                CurrentFrameAdvantage = (ulong)currentFrameAdvantage,
+                CurrentFrameAdvantage = currentFrameAdvantage,
+                WouldNextForwardInputDash = WouldNextForwardInputDash(),
+                WouldNextBackwardInputDash = WouldNextBackwardInputDash(),
+                SpecialAttackProgress = GetSpecialAttackProgress(),
             };
 
             // Iterate over input and add it to the PlayerState.InputBuffer
             for (int i = 0; i < input.Length; i++)
             {
-                playerState.InputBuffer.Add((ulong)input[i]);
+                playerState.InputBuffer.Add(input[i]);
             }
 
             return playerState;
         }
+    }
+}
 
 
