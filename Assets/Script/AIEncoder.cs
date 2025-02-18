@@ -59,7 +59,6 @@ namespace Footsies
 
             // Position and velocity
             features.Add(playerState.PlayerPositionX / POSITION_SCALE);
-            features.Add(playerState.PlayerPositionY / POSITION_SCALE);
             features.Add(playerState.VelocityX / VELOCITY_SCALE);
 
             // Basic state
@@ -69,7 +68,7 @@ namespace Footsies
             // Guard health one-hot encoding
             for (int i = 0; i < 4; i++)
             {
-                features.Add((playerState.GuardHealth == (ulong)i) ? 1f : 0f);
+                features.Add((playerState.GuardHealth == i) ? 1f : 0f);
             }
 
             // Action ID one-hot encoding
