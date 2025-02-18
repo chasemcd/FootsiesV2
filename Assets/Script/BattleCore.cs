@@ -304,12 +304,12 @@ namespace Footsies
                     {
                         if (deadFighter[0] == fighter1)
                         {
-                            fighter2RoundWon++;
+                            // fighter2RoundWon++;
                             fighter2.RequestWinAction();
                         }
                         else if (deadFighter[0] == fighter2)
                         {
-                            fighter1RoundWon++;
+                            // fighter1RoundWon++;
                             fighter1.RequestWinAction();
                         }
                     }
@@ -670,8 +670,8 @@ namespace Footsies
             {  
                 Player1 = fighter1.getPlayerState(),
                 Player2 = fighter2.getPlayerState(),
-                RoundState = (ulong)_roundState,
-                FrameCount = (ulong)frameCount,
+                RoundState = (long)_roundState,
+                FrameCount = frameCount,
             };
 
             return gameState;
