@@ -4,6 +4,7 @@ using System.Xml.Serialization;
 using Unity.Barracuda;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Linq;
 
 namespace Footsies
 {
@@ -93,6 +94,23 @@ namespace Footsies
         private float endStateSkippableTime = 1.5f;
 
         public bool IsUsingGrpcController => useGrpcController;
+
+        private List<ActionLog> player1Actions = new List<ActionLog>();
+        private List<ActionLog> player2Actions = new List<ActionLog>();
+
+        private class ActionLog
+        {
+            public int action;
+            public int frame;
+            public bool isPlayer1;
+
+            public ActionLog(int action, int frame, bool isPlayer1)
+            {
+                this.action = action;
+                this.frame = frame;
+                this.isPlayer1 = isPlayer1;
+            }
+        }
 
         void Awake()
         {
@@ -246,6 +264,9 @@ namespace Footsies
                     fighter1.SetupBattleStart(fighterDataList[0], new Vector2(-2f, 0f), true);
                     fighter2.SetupBattleStart(fighterDataList[0], new Vector2(2f, 0f), false);
 
+                    player1Actions.Clear();
+                    player2Actions.Clear();
+
                     timer = introStateTime;
 
                     roundUIAnimator.SetTrigger("RoundStart");
@@ -266,6 +287,7 @@ namespace Footsies
                         
                         // Initialize with the model
                         // barracudaAI.Initialize(GameManager.Instance.barracudaModel);
+
 
                     break;
                 case RoundStateType.Fight:
@@ -294,6 +316,8 @@ namespace Footsies
 
                     roundUIAnimator.SetTrigger("RoundEnd");
 
+                    EmitRoundResults();
+
                     break;
                 case RoundStateType.End:
 
@@ -313,6 +337,7 @@ namespace Footsies
                             fighter1.RequestWinAction();
                         }
                     }
+                    EmitRoundResults();
 
                     break;
             }
@@ -355,6 +380,10 @@ namespace Footsies
 
             UpdatePushCharacterVsCharacter();
             UpdatePushCharacterVsBackground();
+
+            LogFighterActions(fighter1, true);
+            LogFighterActions(fighter2, false);
+
             UpdateHitboxHurtboxCollision();
         }
 
@@ -686,6 +715,35 @@ namespace Footsies
             encodedGameState.Player2Encoding.AddRange(encoder.EncodeGameState(GetGameState(), false));
 
             return encodedGameState;
+        }
+
+        private void LogFighterActions(Fighter fighter, bool isPlayer1)
+        {
+            if (fighter.getInput(0) != fighter.getInput(1))
+            {
+                var actionLog = new ActionLog(fighter.getInput(0), frameCount, isPlayer1);
+                if (isPlayer1)
+                    player1Actions.Add(actionLog);
+                else
+                    player2Actions.Add(actionLog);
+            }
+        }
+
+        private void EmitRoundResults()
+        {
+            var deadFighter = _fighters.Find((f) => f.isDead);
+            string winner = deadFighter == null ? "Tie" : (deadFighter == fighter1 ? "P2" : "P1");
+
+            var roundResults = new Dictionary<string, object>
+            {
+                { "winner", winner },
+                { "totalFrames", frameCount },
+                { "player1Actions", player1Actions.Select(a => new { action = a.action, frame = a.frame }).ToList() },
+                { "player2Actions", player2Actions.Select(a => new { action = a.action, frame = a.frame }).ToList() }
+            };
+
+            // Emit the results through SocketIO
+            SocketIOManager.Instance.EmitRoundResults(roundResults);
         }
 
     }

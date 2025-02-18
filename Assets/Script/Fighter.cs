@@ -832,6 +832,11 @@ namespace Footsies
 
             return playerState;
         }
+
+        public int getInput(int index)
+        {
+            return input[index];
+        }
     }
 }
 
