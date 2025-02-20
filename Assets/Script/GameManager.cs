@@ -19,8 +19,8 @@ namespace Footsies
         public SceneIndex currentScene { get; private set; }
         public bool isVsCPU { get; private set; }
 
-        [SerializeField]
-        public NNModel barracudaModel;
+        // [SerializeField]
+        // public NNModel barracudaModel;
 
 
         private void Awake()

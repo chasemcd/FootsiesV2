@@ -1,11 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Footsies
 {
     public class AIEncoder
     {
-        private const float POSITION_SCALE = 2.0f;
+        private const float POSITION_SCALE = 4.0f;
         private const float VELOCITY_SCALE = 5.0f;
         private const float FRAME_SCALE = 25.0f;
         private const float HIT_STUN_SCALE = 10.0f;
@@ -32,30 +33,70 @@ namespace Footsies
             { CommonActionID.WIN, 16 }
         };
 
-        public static int ObservationSize => 2234; // Kept for compatibility
+        public static int ObservationSize => 81; // Kept for compatibility
 
-        public float[] EncodeGameState(GameState gameState, bool isPlayer1)
+        private readonly Queue<float[]>[] _encodingHistory;
+        private readonly int _observationDelay;
+
+        public AIEncoder(int observationDelay = 16)
         {
-            var features = new List<float>();
-
-            // Encode states in order [current_player, opponent]
-            if (isPlayer1)
-            {
-                features.AddRange(EncodePlayerState(gameState.Player1));
-                features.AddRange(EncodePlayerState(gameState.Player2));
-            }
-            else
-            {
-                features.AddRange(EncodePlayerState(gameState.Player2));
-                features.AddRange(EncodePlayerState(gameState.Player1));
-            }
-
-            return features.ToArray();
+            _observationDelay = observationDelay;
+            _encodingHistory = new Queue<float[]>[] { 
+                new Queue<float[]>(), // Player 1 history
+                new Queue<float[]>()  // Player 2 history
+            };
         }
 
-        private IEnumerable<float> EncodePlayerState(PlayerState playerState)
+        public (float[] player1Encoding, float[] player2Encoding) EncodeGameState(GameState gameState)
+        {
+
+            // Encode current states
+            var commonState = EncodeCommonState(gameState).ToArray();
+            var p1Features = EncodePlayerState(gameState.Player1, gameState.FrameCount).ToArray();
+            var p2Features = EncodePlayerState(gameState.Player2, gameState.FrameCount).ToArray();
+
+            // Get delayed opponent state first
+            float[] delayedP1Features = p1Features;
+            float[] delayedP2Features = p2Features;
+            
+            int effectiveDelay = (_encodingHistory[0].Count < _observationDelay) ? 0 : _observationDelay;
+            
+            if (effectiveDelay > 0)
+            {
+                delayedP1Features = _encodingHistory[0].ElementAt(_encodingHistory[0].Count - _observationDelay);
+                delayedP2Features = _encodingHistory[1].ElementAt(_encodingHistory[1].Count - _observationDelay);
+            }
+
+            // Store current encodings in history
+            _encodingHistory[0].Enqueue(p1Features);
+            _encodingHistory[1].Enqueue(p2Features);
+
+            // Maintain history length
+            while (_encodingHistory[0].Count > _observationDelay)
+            {
+                _encodingHistory[0].Dequeue();
+                _encodingHistory[1].Dequeue();
+            }
+
+            // Create encodings for both players
+            var p1Encoding = new List<float>();
+            p1Encoding.AddRange(commonState);
+            p1Encoding.AddRange(p1Features);       // Current P1 state (undelayed)
+            p1Encoding.AddRange(delayedP2Features);// P2 state (delayed)
+
+            var p2Encoding = new List<float>();
+            p2Encoding.AddRange(commonState);
+            p2Encoding.AddRange(p2Features);       // Current P2 state (undelayed)
+            p2Encoding.AddRange(delayedP1Features);// P1 state (delayed)
+
+            return (p1Encoding.ToArray(), p2Encoding.ToArray());
+        }
+
+        private IEnumerable<float> EncodePlayerState(PlayerState playerState, long frameCount)
         {
             var features = new List<float>();
+
+            // features.Add(frameCount);
 
             // Position and velocity
             features.Add(playerState.PlayerPositionX / POSITION_SCALE);
@@ -95,7 +136,11 @@ namespace Footsies
             features.Add(playerState.MaxSpriteShakeFrame / HIT_STUN_SCALE);
             features.Add(playerState.IsFaceRight ? 1f : 0f);
             features.Add(playerState.CurrentFrameAdvantage / HIT_STUN_SCALE);
-
+            features.Add(playerState.WouldNextForwardInputDash ? 1f : 0f);
+            features.Add(playerState.WouldNextBackwardInputDash ? 1f : 0f);
+            features.Add(Mathf.Min(playerState.SpecialAttackProgress, 1.0f));
+            
+            
             // // Input buffer encoding
             // foreach (int input in playerState.InputBuffer)
             // {
@@ -112,6 +157,12 @@ namespace Footsies
             // }
 
             return features;
+        }
+
+        private IEnumerable<float> EncodeCommonState(GameState gameState)
+        {
+            float distX = Mathf.Abs(gameState.Player1.PlayerPositionX - gameState.Player2.PlayerPositionX) / 8.0f;
+            return new float[] { distX };
         }
     }
 }

@@ -29,11 +29,20 @@ namespace Footsies
         // Add new field for action queue
         private Dictionary<bool, Queue<int>> actionQueue = new Dictionary<bool, Queue<int>>();
 
-        public BattleAIBarracuda(BattleCore core)
+        public BattleAIBarracuda(BattleCore core, string modelPath, int observationDelay)
         {
             battleCore = core;
-            encoder = new AIEncoder();
-            // Don't load the model here - wait until it's assigned
+            encoder = new AIEncoder(observationDelay);
+
+            // Load model from Resources
+            var modelAsset = Resources.Load<NNModel>(modelPath);
+            if (modelAsset == null)
+            {
+                Debug.LogError($"Failed to load Barracuda model from Resources path: {modelPath}");
+                return;
+            }
+            
+            Initialize(modelAsset);
             
             // Initialize states
             lastHiddenStates[true] = new Tensor(1, STATE_SIZE);
@@ -63,8 +72,8 @@ namespace Footsies
 
         public Tensor encodeGameState(GameState gameState, bool isPlayer1)
         {
-            float[] encodedState = encoder.EncodeGameState(gameState, isPlayer1);
-            return new Tensor(1, AIEncoder.ObservationSize, encodedState);
+            var (p1Encoding, p2Encoding) = encoder.EncodeGameState(gameState);
+            return new Tensor(1, AIEncoder.ObservationSize, isPlayer1 ? p1Encoding : p2Encoding);
         }
 
         public int getNextAIInput(bool isPlayer1)
@@ -80,6 +89,7 @@ namespace Footsies
             var inputs = new Dictionary<string, Tensor>();
             
             // Add encoded state
+
             var encodedState = encodeGameState(gameState, isPlayer1);
             inputs["obs"] = encodedState;
             // Debug.Log($"Observation tensor shape: {inputs["obs"].shape}, Values: [{string.Join(", ", inputs["obs"].AsFloats().Select(x => x.ToString("F4")))}]");

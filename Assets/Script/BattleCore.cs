@@ -86,7 +86,7 @@ namespace Footsies
 
         public bool isDebugPause { get; private set; }
 
-        private bool useGrpcController = true;
+        private bool useGrpcController = false;
 
         private float introStateTime = 3f;
         private float koStateTime = 2f;
@@ -272,22 +272,25 @@ namespace Footsies
                     roundUIAnimator.SetTrigger("RoundStart");
 
                     if (GameManager.Instance.isVsCPU)
-
+                    {
                         // TODO(chase): Make this configurable!
                         // battleAI = new BattleAI(this);
                         // Create the AI instance
-                        barracudaAI = new BattleAIBarracuda(this);
+                        var modelPath = "4fs-16od-082992f-0.03to0.01-sp";
+                        barracudaAI = new BattleAIBarracuda(this, modelPath, 16);
                         
-                        // Check if we have a model assigned
-                        if (GameManager.Instance.barracudaModel == null)
-                        {
-                            Debug.LogError("Barracuda model not assigned! Please assign it in the Unity Inspector.");
-                            return;
-                        }
+                        // // Check if we have a model assigned
+                        // if (GameManager.Instance.barracudaModel == null)
+                        // {
+                        //     Debug.LogError("Barracuda model not assigned! Please assign it in the Unity Inspector.");
+                        //     Debug.LogError($"GameManager.Instance: {GameManager.Instance}");
+                        //     Debug.LogError($"GameManager.Instance.barracudaModel: {GameManager.Instance.barracudaModel}");
+                        //     return;
+                        // }
                         
                         // Initialize with the model
                         // barracudaAI.Initialize(GameManager.Instance.barracudaModel);
-
+                    }
 
                     break;
                 case RoundStateType.Fight:
@@ -315,8 +318,6 @@ namespace Footsies
                     }
 
                     roundUIAnimator.SetTrigger("RoundEnd");
-
-                    EmitRoundResults();
 
                     break;
                 case RoundStateType.End:
@@ -711,8 +712,9 @@ namespace Footsies
             EncodedGameState encodedGameState = new EncodedGameState();
             
             // Use AddRange to add elements to the repeated fields
-            encodedGameState.Player1Encoding.AddRange(encoder.EncodeGameState(GetGameState(), true));
-            encodedGameState.Player2Encoding.AddRange(encoder.EncodeGameState(GetGameState(), false));
+            var (p1Encoding, p2Encoding) = encoder.EncodeGameState(GetGameState());
+            encodedGameState.Player1Encoding.AddRange(p1Encoding);
+            encodedGameState.Player2Encoding.AddRange(p2Encoding);
 
             return encodedGameState;
         }
@@ -731,6 +733,13 @@ namespace Footsies
 
         private void EmitRoundResults()
         {
+            // Skip if SocketIOManager is not available
+            if (SocketIOManager.Instance == null)
+            {
+                Debug.LogWarning("SocketIOManager.Instance is null - skipping round results emission");
+                return;
+            }
+
             var deadFighter = _fighters.Find((f) => f.isDead);
             string winner = deadFighter == null ? "Tie" : (deadFighter == fighter1 ? "P2" : "P1");
 

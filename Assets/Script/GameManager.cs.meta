@@ -3,7 +3,10 @@ guid: 7c836d3e89053e343972f5fc3f5075c1
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - menuSelectAudioClip: {instanceID: 0}
+  - barracudaModel: {fileID: 5022602860645237092, guid: 5d3943f8b53dfda439d30ba59cdcacb9,
+      type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
