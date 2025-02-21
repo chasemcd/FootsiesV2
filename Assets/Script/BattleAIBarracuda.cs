@@ -20,19 +20,21 @@ namespace Footsies
         private Dictionary<bool, Tensor> lastCellStates = new Dictionary<bool, Tensor>();
         private const int STATE_SIZE = 128;
 
-        private const int FRAME_SKIP = 4;
+        private int curframeSkip = 4;
 
         // Add new fields for special charge tracking
         public Dictionary<bool, int> specialChargeQueue = new Dictionary<bool, int>();
-        private const int SPECIAL_CHARGE_DURATION = 60 / FRAME_SKIP;
+        private int curSpecialChargeDuration;
 
         // Add new field for action queue
         private Dictionary<bool, Queue<int>> actionQueue = new Dictionary<bool, Queue<int>>();
 
-        public BattleAIBarracuda(BattleCore core, string modelPath, int observationDelay)
+        public BattleAIBarracuda(BattleCore core, string modelPath, int observationDelay, int frameSkip)
         {
             battleCore = core;
             encoder = new AIEncoder(observationDelay);
+            curframeSkip = frameSkip;
+            curSpecialChargeDuration = 60 / frameSkip;
 
             // Load model from Resources
             var modelAsset = Resources.Load<NNModel>(modelPath);
@@ -154,7 +156,7 @@ namespace Footsies
             // Refill charge queue only if we're not already in a special charge
             if (isSpecialCharge && queueEmpty)
             {
-                specialChargeQueue[isPlayer1] = SPECIAL_CHARGE_DURATION;
+                specialChargeQueue[isPlayer1] = curSpecialChargeDuration;
             }
 
             // Convert action to bits
@@ -190,7 +192,7 @@ namespace Footsies
             // Apply special charge effect
             if (specialChargeQueue[isPlayer1] > 0)
             {
-                specialChargeQueue[isPlayer1] -= FRAME_SKIP;
+                specialChargeQueue[isPlayer1] -= 1;
                 actionBits |= (1 << 2); // Add ATTACK bit
             }
 
@@ -201,6 +203,14 @@ namespace Footsies
             }
 
             return actionQueue[isPlayer1].Dequeue();
+        }
+
+        public void resetHiddenStates()
+        {
+            lastHiddenStates[true] = new Tensor(1, STATE_SIZE);
+            lastHiddenStates[false] = new Tensor(1, STATE_SIZE);
+            lastCellStates[true] = new Tensor(1, STATE_SIZE);
+            lastCellStates[false] = new Tensor(1, STATE_SIZE);
         }
 
         public void Dispose()

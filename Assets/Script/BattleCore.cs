@@ -74,6 +74,9 @@ namespace Footsies
         [SerializeField] 
         private AIEncoder encoder = new AIEncoder();
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
+        private string currentModelPath = "4fs-16od-082992f-0.03to0.01-sp";
+        private int currentObservationDelay = 16;
+        private int currentFrameSkip = 4;
         private InputData[] recordingP1Input = new InputData[maxRecordingInputFrame];
         private InputData[] recordingP2Input = new InputData[maxRecordingInputFrame];
         private uint currentRecordingInputIndex = 0;
@@ -115,6 +118,24 @@ namespace Footsies
         void Awake()
         {
             ParseCommandLineArgs();
+
+            // Add SocketIO listener for model changes
+            if (SocketIOManager.Instance != null)
+            {
+                SocketIOManager.Instance.Socket.On("changeModel", (data) =>
+                {
+                    string newModelPath = data.ToString();
+                    Debug.Log($"Received new model path: {newModelPath}");
+                    currentModelPath = newModelPath;
+                    
+                    // If we're in VS CPU mode and the AI is active, update it
+                    if (GameManager.Instance.isVsCPU && barracudaAI != null)
+                    {
+                        barracudaAI.Dispose();
+                        barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
+                    }
+                });
+            }
 
             // Setup dictionary from ScriptableObject data
             fighterDataList.ForEach((data) => data.setupDictionary());
@@ -273,23 +294,8 @@ namespace Footsies
 
                     if (GameManager.Instance.isVsCPU)
                     {
-                        // TODO(chase): Make this configurable!
-                        // battleAI = new BattleAI(this);
-                        // Create the AI instance
-                        var modelPath = "4fs-16od-082992f-0.03to0.01-sp";
-                        barracudaAI = new BattleAIBarracuda(this, modelPath, 16);
-                        
-                        // // Check if we have a model assigned
-                        // if (GameManager.Instance.barracudaModel == null)
-                        // {
-                        //     Debug.LogError("Barracuda model not assigned! Please assign it in the Unity Inspector.");
-                        //     Debug.LogError($"GameManager.Instance: {GameManager.Instance}");
-                        //     Debug.LogError($"GameManager.Instance.barracudaModel: {GameManager.Instance.barracudaModel}");
-                        //     return;
-                        // }
-                        
-                        // Initialize with the model
-                        // barracudaAI.Initialize(GameManager.Instance.barracudaModel);
+                        // Use currentModelPath instead of hardcoded path
+                        barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
                     }
 
                     break;
@@ -299,7 +305,15 @@ namespace Footsies
                     frameCount = -1;
 
                     currentRecordingInputIndex = 0;
-                    
+
+                    // NOTE(chase): Training skips the intro frames, so
+                    // we reset the hidden states at the same point that
+                    // rounds begin in training. 
+                    if (barracudaAI != null)
+                    {
+                        barracudaAI.resetHiddenStates();
+                    }
+
                     break;
                 case RoundStateType.KO:
 
