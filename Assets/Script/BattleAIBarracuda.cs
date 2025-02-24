@@ -99,12 +99,13 @@ namespace Footsies
             // Add previous hidden/cell states
             if (lastHiddenStates.ContainsKey(isPlayer1) && lastCellStates.ContainsKey(isPlayer1)) {
                 inputs["state_in_0"] = lastCellStates[isPlayer1];
-                inputs["state_in_1"] = lastHiddenStates[isPlayer1];
+                inputs["state_in_1"] = lastHiddenStates[isPlayer1];                
             } else {
                 // Initialize with zeros if no previous state
                 inputs["state_in_0"] = new Tensor(1, STATE_SIZE);
                 inputs["state_in_1"] = new Tensor(1, STATE_SIZE);
             }
+
 
             inputs["seq_lens"] = new Tensor(new[] { 1 }, new float[] { 1 });
 
@@ -203,6 +204,11 @@ namespace Footsies
             }
 
             return actionQueue[isPlayer1].Dequeue();
+        }
+
+        public void resetObsHistory()
+        {
+            encoder.resetObsHistory();
         }
 
         public void resetHiddenStates()

@@ -1,10 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using Unity.Barracuda;
 using UnityEngine;
 using UnityEngine.Events;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace Footsies
 {
@@ -74,7 +76,7 @@ namespace Footsies
         [SerializeField] 
         private AIEncoder encoder = new AIEncoder();
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
-        private string currentModelPath = "4fs-16od-082992f-0.03to0.01-sp";
+        private string currentModelPath = "4fs-16od-13c7f7b-0.05to0.01-sp-02";
         private int currentObservationDelay = 16;
         private int currentFrameSkip = 4;
         private InputData[] recordingP1Input = new InputData[maxRecordingInputFrame];
@@ -124,9 +126,16 @@ namespace Footsies
             {
                 SocketIOManager.Instance.Client.On("changeModel", (data) =>
                 {
-                    string newModelPath = data.ToString();
-                    Debug.Log($"Received new model path: {newModelPath}");
+                    var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(data.ToString());
+                    string newModelPath = jsonObject["modelPath"].ToString();
+                    int newObservationDelay = Convert.ToInt32(jsonObject["observationDelay"]);
+                    int newFrameSkip = Convert.ToInt32(jsonObject["frameSkip"]);
+
+                    Debug.Log($"Received new model path: {newModelPath}, observation delay: {newObservationDelay}, frame skip: {newFrameSkip}");
+
                     currentModelPath = newModelPath;
+                    currentObservationDelay = newObservationDelay;
+                    currentFrameSkip = newFrameSkip;
                     
                     // If we're in VS CPU mode and the AI is active, update it
                     if (GameManager.Instance.isVsCPU && barracudaAI != null)
@@ -134,6 +143,13 @@ namespace Footsies
                         barracudaAI.Dispose();
                         barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
                     }
+                });
+
+                // Add SocketIO listener for returning to the title screen
+                SocketIOManager.Instance.Client.On("toTitleScreen", (data) =>
+                {
+                    Debug.Log("Received request to return to title screen");
+                    GameManager.Instance.LoadTitleScene();
                 });
             }
 
@@ -300,6 +316,7 @@ namespace Footsies
 
                     if (GameManager.Instance.isVsCPU)
                     {
+                        Debug.Log("Initializing Barracuda AI...");
                         // Use currentModelPath instead of hardcoded path
                         barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
                     }
@@ -315,10 +332,14 @@ namespace Footsies
                     // NOTE(chase): Training skips the intro frames, so
                     // we reset the hidden states at the same point that
                     // rounds begin in training. 
+                    Debug.Log("Resetting hidden states and observation history...");
                     if (barracudaAI != null)
                     {
+                        Debug.Log("Resetting hidden states and observation history");
                         barracudaAI.resetHiddenStates();
+                        barracudaAI.resetObsHistory();
                     }
+                    encoder.resetObsHistory();
 
                     break;
                 case RoundStateType.KO:

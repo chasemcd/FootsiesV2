@@ -47,6 +47,13 @@ namespace Footsies
             };
         }
 
+        public void resetObsHistory()
+        {
+            Debug.Log("resetting obs history");
+            _encodingHistory[0].Clear();
+            _encodingHistory[1].Clear();
+        }
+
         public (float[] player1Encoding, float[] player2Encoding) EncodeGameState(GameState gameState)
         {
 
