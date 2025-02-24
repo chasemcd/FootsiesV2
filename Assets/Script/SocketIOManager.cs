@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using System.Collections.Generic;
 using SocketIOClient;
+using Newtonsoft.Json;
 
 namespace Footsies
 {
@@ -14,22 +15,11 @@ namespace Footsies
 
 #if UNITY_WEBGL
         [DllImport("__Internal")]
-        private static extern void ConnectSocketIO();
+        private static extern void UnityConnectSocketIO();
 
         [DllImport("__Internal")]
         private static extern void EmitUnityEpisodeResults(string json);
-#else
-        // Stub for non-WebGL platforms or during build
-        private void EmitUnityEpisodeResults(string json)
-        {
-            Debug.Log("EmitUnityEpisodeResults stub called with: " + json);
-        }
 
-                // Stub for non-WebGL platforms or during build
-        private void ConnectSocketIO(string json)
-        {
-            Debug.Log("ConnectSocketIO stub called with: " + json);
-        }
 #endif
 
         void Awake()
@@ -87,14 +77,14 @@ namespace Footsies
         public void EmitRoundResults(Dictionary<string, object> results)
         {
 #if UNITY_WEBGL
-            string json = JsonUtility.ToJson(results);
-            EmitRoundResults(json);
+            string json = JsonConvert.SerializeObject(results);
+            EmitUnityEpisodeResults(json);
 #else
             Debug.Log("Trying to emit round results via SocketIO..." + Client.Connected + " " + Client);
             if (Client != null && Client.Connected)
             {
                 Debug.Log("Emitting round results via SocketIO");
-                Client.EmitAsync("roundEnd", results);
+                Client.EmitAsync("unityEpisodeEnd", results);
             }
 #endif
         }
