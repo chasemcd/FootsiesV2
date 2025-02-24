@@ -18,6 +18,18 @@ namespace Footsies
 
         [DllImport("__Internal")]
         private static extern void EmitUnityEpisodeResults(string json);
+#else
+        // Stub for non-WebGL platforms or during build
+        private void EmitUnityEpisodeResults(string json)
+        {
+            Debug.Log("EmitUnityEpisodeResults stub called with: " + json);
+        }
+
+                // Stub for non-WebGL platforms or during build
+        private void ConnectSocketIO(string json)
+        {
+            Debug.Log("ConnectSocketIO stub called with: " + json);
+        }
 #endif
 
         void Awake()
