@@ -1,7 +1,9 @@
+#if UNITY_WEBGL
+using System.Runtime.InteropServices;
+#endif
 using UnityEngine;
 using System.Collections.Generic;
 using SocketIOClient;
-
 
 namespace Footsies
 {
@@ -9,6 +11,14 @@ namespace Footsies
     {
         public static SocketIOManager Instance { get; private set; }
         public SocketIOClient.SocketIO Client { get; private set; }
+
+#if UNITY_WEBGL
+        [DllImport("__Internal")]
+        private static extern void ConnectSocketIO();
+
+        [DllImport("__Internal")]
+        private static extern void EmitUnityEpisodeResults(string json);
+#endif
 
         void Awake()
         {
@@ -64,12 +74,17 @@ namespace Footsies
 
         public void EmitRoundResults(Dictionary<string, object> results)
         {
+#if UNITY_WEBGL
+            string json = JsonUtility.ToJson(results);
+            EmitRoundResults(json);
+#else
             Debug.Log("Trying to emit round results via SocketIO..." + Client.Connected + " " + Client);
             if (Client != null && Client.Connected)
             {
                 Debug.Log("Emitting round results via SocketIO");
                 Client.EmitAsync("roundEnd", results);
             }
+#endif
         }
 
         void OnDestroy()
@@ -77,5 +92,4 @@ namespace Footsies
             Client?.DisconnectAsync();
         }
     }
-
 }
