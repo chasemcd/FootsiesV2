@@ -87,6 +87,14 @@ namespace Footsies
 #endif
         }
 
+        // Overload for WebGL
+        #if UNITY_WEBGL
+        private void EmitRoundResults(string json)
+        {
+            EmitRoundResults(json);
+        }
+        #endif
+
         void OnDestroy()
         {
             Client?.DisconnectAsync();
