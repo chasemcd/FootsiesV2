@@ -122,7 +122,7 @@ namespace Footsies
             // Add SocketIO listener for model changes
             if (SocketIOManager.Instance != null)
             {
-                SocketIOManager.Instance.Socket.On("changeModel", (data) =>
+                SocketIOManager.Instance.Client.On("changeModel", (data) =>
                 {
                     string newModelPath = data.ToString();
                     Debug.Log($"Received new model path: {newModelPath}");
@@ -164,6 +164,12 @@ namespace Footsies
                 // Set to Fight to start the game
                 UpdateIntroState();
                 ChangeRoundState(RoundStateType.Fight);
+            }
+
+            if (SocketIOManager.Instance == null)
+            {
+                GameObject go = new GameObject("SocketIOManager");
+                go.AddComponent<SocketIOManager>();
             }
         }
 
@@ -761,8 +767,15 @@ namespace Footsies
             {
                 { "winner", winner },
                 { "totalFrames", frameCount },
-                { "player1Actions", player1Actions.Select(a => new { action = a.action, frame = a.frame }).ToList() },
-                { "player2Actions", player2Actions.Select(a => new { action = a.action, frame = a.frame }).ToList() }
+                { "currentBattleModel", currentModelPath },
+                { "player1Actions", new Dictionary<string, int[]> {
+                    { "actions", player1Actions.Select(a => a.action).ToArray() },
+                    { "frames", player1Actions.Select(a => a.frame).ToArray() }
+                }},
+                { "player2Actions", new Dictionary<string, int[]> {
+                    { "actions", player2Actions.Select(a => a.action).ToArray() },
+                    { "frames", player2Actions.Select(a => a.frame).ToArray() }
+                }}
             };
 
             // Emit the results through SocketIO

@@ -120,8 +120,8 @@ namespace Footsies
 
             // Get logits and states from the correct output names
             var logits = output.PeekOutput("output").AsFloats();
-            lastCellStates[isPlayer1] = output.CopyOutput("state_out_0");
-            lastHiddenStates[isPlayer1] = output.CopyOutput("state_out_1");
+            lastCellStates[isPlayer1] = output.PeekOutput("state_out_0");
+            lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1");
 
             // Apply softmax and sample
             // Log logits to console
@@ -197,7 +197,7 @@ namespace Footsies
             }
 
             // Fill the queue with the same action FRAME_SKIP times
-            for (int i = 0; i < FRAME_SKIP; i++)
+            for (int i = 0; i < curframeSkip; i++)
             {
                 actionQueue[isPlayer1].Enqueue(actionBits);
             }

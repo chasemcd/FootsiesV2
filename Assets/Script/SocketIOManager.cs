@@ -8,7 +8,7 @@ namespace Footsies
     public class SocketIOManager : MonoBehaviour
     {
         public static SocketIOManager Instance { get; private set; }
-        private SocketIOClient.SocketIO socket;
+        public SocketIOClient.SocketIO Client { get; private set; }
 
         void Awake()
         {
@@ -26,21 +26,55 @@ namespace Footsies
 
         private async void InitializeSocket()
         {
-            socket = new SocketIOClient.SocketIO("http://localhost:5704");
-            await socket.ConnectAsync();
+            try
+            {
+                Debug.Log("Initializing Socket.IO connection...");
+                Client = new SocketIOClient.SocketIO("http://127.0.0.1:5704", new SocketIOOptions
+                {
+                    Reconnection = true,
+                    ReconnectionAttempts = 3,
+                    ReconnectionDelay = 1000,
+                    Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
+                });
+
+                Client.OnConnected += (sender, e) =>
+                {
+                    Debug.Log("Socket.IO Connected successfully!");
+                };
+
+                Client.OnDisconnected += (sender, e) =>
+                {
+                    Debug.LogWarning($"Socket.IO Disconnected! Reason: {e}");
+                };
+
+                Client.OnError += (sender, e) =>
+                {
+                    Debug.LogError($"Socket.IO Error: {e}");
+                };
+
+                Debug.Log("Attempting to connect...");
+                await Client.ConnectAsync();
+                Debug.Log($"Connection attempt completed. Connected: {Client.Connected}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Socket.IO Connection Error: {e.Message}\nStack trace: {e.StackTrace}");
+            }
         }
 
         public void EmitRoundResults(Dictionary<string, object> results)
         {
-            if (socket != null && socket.Connected)
+            Debug.Log("Trying to emit round results via SocketIO..." + Client.Connected + " " + Client);
+            if (Client != null && Client.Connected)
             {
-                socket.EmitAsync("roundEnd", results);
+                Debug.Log("Emitting round results via SocketIO");
+                Client.EmitAsync("roundEnd", results);
             }
         }
 
         void OnDestroy()
         {
-            socket?.DisconnectAsync();
+            Client?.DisconnectAsync();
         }
     }
 
