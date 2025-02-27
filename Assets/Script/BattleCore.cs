@@ -1,10 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using Unity.Barracuda;
 using UnityEngine;
 using UnityEngine.Events;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace Footsies
 {
@@ -122,11 +124,18 @@ namespace Footsies
             // Add SocketIO listener for model changes
             if (SocketIOManager.Instance != null)
             {
-                SocketIOManager.Instance.Socket.On("changeModel", (data) =>
+                SocketIOManager.Instance.Client.On("changeModel", (data) =>
                 {
-                    string newModelPath = data.ToString();
-                    Debug.Log($"Received new model path: {newModelPath}");
+                    var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(data.ToString());
+                    string newModelPath = jsonObject["modelPath"].ToString();
+                    int newObservationDelay = Convert.ToInt32(jsonObject["observationDelay"]);
+                    int newFrameSkip = Convert.ToInt32(jsonObject["frameSkip"]);
+
+                    Debug.Log($"Received new model path: {newModelPath}, observation delay: {newObservationDelay}, frame skip: {newFrameSkip}");
+
                     currentModelPath = newModelPath;
+                    currentObservationDelay = newObservationDelay;
+                    currentFrameSkip = newFrameSkip;
                     
                     // If we're in VS CPU mode and the AI is active, update it
                     if (GameManager.Instance.isVsCPU && barracudaAI != null)
@@ -134,6 +143,13 @@ namespace Footsies
                         barracudaAI.Dispose();
                         barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
                     }
+                });
+
+                // Add SocketIO listener for returning to the title screen
+                SocketIOManager.Instance.Client.On("toTitleScreen", (data) =>
+                {
+                    Debug.Log("Received request to return to title screen");
+                    GameManager.Instance.LoadTitleScene();
                 });
             }
 
@@ -164,6 +180,12 @@ namespace Footsies
                 // Set to Fight to start the game
                 UpdateIntroState();
                 ChangeRoundState(RoundStateType.Fight);
+            }
+
+            if (SocketIOManager.Instance == null)
+            {
+                GameObject go = new GameObject("SocketIOManager");
+                go.AddComponent<SocketIOManager>();
             }
         }
 
@@ -294,6 +316,7 @@ namespace Footsies
 
                     if (GameManager.Instance.isVsCPU)
                     {
+                        // Debug.Log("Initializing Barracuda AI...");
                         // Use currentModelPath instead of hardcoded path
                         barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
                     }
@@ -309,10 +332,14 @@ namespace Footsies
                     // NOTE(chase): Training skips the intro frames, so
                     // we reset the hidden states at the same point that
                     // rounds begin in training. 
+                    // Debug.Log("Resetting hidden states and observation history...");
                     if (barracudaAI != null)
                     {
+                        // Debug.Log("Resetting hidden states and observation history");
                         barracudaAI.resetHiddenStates();
+                        barracudaAI.resetObsHistory();
                     }
+                    encoder.resetObsHistory();
 
                     break;
                 case RoundStateType.KO:
@@ -330,6 +357,10 @@ namespace Footsies
                         barracudaAI.Dispose();
                         barracudaAI = null;
                     }
+                    // if (barracudaAI != null)
+                    // {
+                    //     barracudaAI.SaveGameLog();
+                    // }
 
                     roundUIAnimator.SetTrigger("RoundEnd");
 
@@ -491,8 +522,14 @@ namespace Footsies
             }
             else if (barracudaAI != null)
             {
-                // p2Input.input |= battleAI.getNextAIInput();
+                // var startTime = Time.realtimeSinceStartup;
                 p2Input.input |= barracudaAI.getNextAIInput(false);
+                // var duration = Time.realtimeSinceStartup - startTime;
+                // if (duration > 0.0f) // longer than one frame at 60fps
+                // {
+                //     Debug.Log($"AI input took {duration*1000:F2}ms");
+                // }
+
             }
             else
             {
@@ -761,8 +798,15 @@ namespace Footsies
             {
                 { "winner", winner },
                 { "totalFrames", frameCount },
-                { "player1Actions", player1Actions.Select(a => new { action = a.action, frame = a.frame }).ToList() },
-                { "player2Actions", player2Actions.Select(a => new { action = a.action, frame = a.frame }).ToList() }
+                { "currentBattleModel", currentModelPath },
+                { "player1Actions", new Dictionary<string, int[]> {
+                    { "actions", player1Actions.Select(a => a.action).ToArray() },
+                    { "frames", player1Actions.Select(a => a.frame).ToArray() }
+                }},
+                { "player2Actions", new Dictionary<string, int[]> {
+                    { "actions", player2Actions.Select(a => a.action).ToArray() },
+                    { "frames", player2Actions.Select(a => a.frame).ToArray() }
+                }}
             };
 
             // Emit the results through SocketIO
