@@ -49,7 +49,6 @@ namespace Footsies
 
         public void resetObsHistory()
         {
-            Debug.Log("resetting obs history");
             _encodingHistory[0].Clear();
             _encodingHistory[1].Clear();
         }

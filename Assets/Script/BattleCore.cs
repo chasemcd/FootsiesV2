@@ -76,7 +76,7 @@ namespace Footsies
         [SerializeField] 
         private AIEncoder encoder = new AIEncoder();
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
-        private string currentModelPath = "4fs-16od-13c7f7b-0.05to0.01-sp-02";
+        private string currentModelPath = "4fs-16od-082992f-0.03to0.01-sp";
         private int currentObservationDelay = 16;
         private int currentFrameSkip = 4;
         private InputData[] recordingP1Input = new InputData[maxRecordingInputFrame];
@@ -316,7 +316,7 @@ namespace Footsies
 
                     if (GameManager.Instance.isVsCPU)
                     {
-                        Debug.Log("Initializing Barracuda AI...");
+                        // Debug.Log("Initializing Barracuda AI...");
                         // Use currentModelPath instead of hardcoded path
                         barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
                     }
@@ -332,10 +332,10 @@ namespace Footsies
                     // NOTE(chase): Training skips the intro frames, so
                     // we reset the hidden states at the same point that
                     // rounds begin in training. 
-                    Debug.Log("Resetting hidden states and observation history...");
+                    // Debug.Log("Resetting hidden states and observation history...");
                     if (barracudaAI != null)
                     {
-                        Debug.Log("Resetting hidden states and observation history");
+                        // Debug.Log("Resetting hidden states and observation history");
                         barracudaAI.resetHiddenStates();
                         barracudaAI.resetObsHistory();
                     }
@@ -357,6 +357,10 @@ namespace Footsies
                         barracudaAI.Dispose();
                         barracudaAI = null;
                     }
+                    // if (barracudaAI != null)
+                    // {
+                    //     barracudaAI.SaveGameLog();
+                    // }
 
                     roundUIAnimator.SetTrigger("RoundEnd");
 
@@ -518,8 +522,14 @@ namespace Footsies
             }
             else if (barracudaAI != null)
             {
-                // p2Input.input |= battleAI.getNextAIInput();
+                // var startTime = Time.realtimeSinceStartup;
                 p2Input.input |= barracudaAI.getNextAIInput(false);
+                // var duration = Time.realtimeSinceStartup - startTime;
+                // if (duration > 0.0f) // longer than one frame at 60fps
+                // {
+                //     Debug.Log($"AI input took {duration*1000:F2}ms");
+                // }
+
             }
             else
             {

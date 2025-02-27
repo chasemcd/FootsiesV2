@@ -40,7 +40,7 @@ namespace Footsies
         {
             try
             {
-                Debug.Log("Initializing Socket.IO connection...");
+                // Debug.Log("Initializing Socket.IO connection...");
                 Client = new SocketIOClient.SocketIO("http://127.0.0.1:5704", new SocketIOOptions
                 {
                     Reconnection = true,

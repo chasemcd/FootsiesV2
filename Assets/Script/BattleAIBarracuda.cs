@@ -2,6 +2,10 @@ using UnityEngine;
 using Unity.Barracuda;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using Newtonsoft.Json;
+using System;
+using static Footsies.BattleCore;
 
 namespace Footsies
 {
@@ -29,6 +33,9 @@ namespace Footsies
         // Add new field for action queue
         private Dictionary<bool, Queue<int>> actionQueue = new Dictionary<bool, Queue<int>>();
 
+        // Add at class level
+        // private List<Dictionary<string, object>> gameLog = new List<Dictionary<string, object>>();
+
         public BattleAIBarracuda(BattleCore core, string modelPath, int observationDelay, int frameSkip)
         {
             battleCore = core;
@@ -46,18 +53,18 @@ namespace Footsies
             
             Initialize(modelAsset);
             
-            // Initialize states
-            lastHiddenStates[true] = new Tensor(1, STATE_SIZE);
-            lastHiddenStates[false] = new Tensor(1, STATE_SIZE);
-            lastCellStates[true] = new Tensor(1, STATE_SIZE);
-            lastCellStates[false] = new Tensor(1, STATE_SIZE);
-
             specialChargeQueue[true] = 0;
             specialChargeQueue[false] = 0;
 
             // Initialize action queues
             actionQueue[true] = new Queue<int>();
             actionQueue[false] = new Queue<int>();
+
+            // Initialize hidden and cell states
+            lastHiddenStates[true] = new Tensor(1, STATE_SIZE);
+            lastHiddenStates[false] = new Tensor(1, STATE_SIZE);
+            lastCellStates[true] = new Tensor(1, STATE_SIZE);
+            lastCellStates[false] = new Tensor(1, STATE_SIZE);
         }
 
         public void Initialize(NNModel model)
@@ -75,7 +82,22 @@ namespace Footsies
         public Tensor encodeGameState(GameState gameState, bool isPlayer1)
         {
             var (p1Encoding, p2Encoding) = encoder.EncodeGameState(gameState);
-            return new Tensor(1, AIEncoder.ObservationSize, isPlayer1 ? p1Encoding : p2Encoding);
+            float[] encodingToUse = isPlayer1 ? p1Encoding : p2Encoding;
+            
+            var tensor = new Tensor(1, AIEncoder.ObservationSize, encodingToUse);
+            
+            // Verify values weren't changed during tensor creation
+            // var tensorValues = tensor.AsFloats();
+            // float maxDiff = encodingToUse.Zip(tensorValues, (pre, post) => Mathf.Abs(pre - post)).Max();
+            // Debug.Log($"Maximum difference between pre and post tensor values: {maxDiff:E10}");
+            
+            // // Verify if there are any NaN or infinity values
+            // if (tensorValues.Any(float.IsNaN) || tensorValues.Any(float.IsInfinity))
+            // {
+            //     Debug.LogError("Found NaN or Infinity values in input Barracuda tensor!");
+            // }
+            
+            return tensor;
         }
 
         public int getNextAIInput(bool isPlayer1)
@@ -85,60 +107,58 @@ namespace Footsies
             {
                 return actionQueue[isPlayer1].Dequeue();
             }
-
-            // If queue is empty, query the model and fill the queue
             var gameState = battleCore.GetGameState();
+            var encoding = encodeGameState(gameState, isPlayer1);
+            
             var inputs = new Dictionary<string, Tensor>();
-            
-            // Add encoded state
-
-            var encodedState = encodeGameState(gameState, isPlayer1);
-            inputs["obs"] = encodedState;
-            // Debug.Log($"Observation tensor shape: {inputs["obs"].shape}, Values: [{string.Join(", ", inputs["obs"].AsFloats().Select(x => x.ToString("F4")))}]");
-            
-            // Add previous hidden/cell states
-            if (lastHiddenStates.ContainsKey(isPlayer1) && lastCellStates.ContainsKey(isPlayer1)) {
-                inputs["state_in_0"] = lastCellStates[isPlayer1];
-                inputs["state_in_1"] = lastHiddenStates[isPlayer1];                
-            } else {
-                // Initialize with zeros if no previous state
-                inputs["state_in_0"] = new Tensor(1, STATE_SIZE);
-                inputs["state_in_1"] = new Tensor(1, STATE_SIZE);
-            }
-
-
+            inputs["obs"] = encoding;
+            inputs["state_in_0"] = lastCellStates[isPlayer1];
+            inputs["state_in_1"] = lastHiddenStates[isPlayer1];
             inputs["seq_lens"] = new Tensor(new[] { 1 }, new float[] { 1 });
 
             var output = worker.Execute(inputs);
+            var logits = output.PeekOutput("output").AsFloats().ToArray();
+            
+            // Only log data during Fight state
+            // if (battleCore.roundState == RoundStateType.Fight)
+            // {
+            //     var frameData = new Dictionary<string, object>
+            //     {
+            //         {"frame", Time.frameCount},
+            //         {"encoding", encoding.AsFloats().ToArray()},
+            //         {"logits", logits},
+            //         {"isPlayer1", isPlayer1},
+            //         {"hidden_state_in", lastHiddenStates[isPlayer1].AsFloats().ToArray()},
+            //         {"cell_state_in", lastCellStates[isPlayer1].AsFloats().ToArray()},
+            //         {"hidden_state_out", output.PeekOutput("state_out_1").AsFloats().ToArray()},
+            //         {"cell_state_out", output.PeekOutput("state_out_0").AsFloats().ToArray()}
+            //     };
+            //     gameLog.Add(frameData);
+            // }
 
             // Clean up input tensors
             foreach (var tensor in inputs.Values)
             {
                 tensor.Dispose();
             }
-            lastCellStates[isPlayer1].Dispose();
-            lastHiddenStates[isPlayer1].Dispose();
 
-            // Get logits and states from the correct output names
-            var logits = output.PeekOutput("output").AsFloats();
-            lastCellStates[isPlayer1] = output.PeekOutput("state_out_0");
-            lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1");
+            // Update the state assignments to create new tensors
+            lastCellStates[isPlayer1] = output.PeekOutput("state_out_0").DeepCopy();
+            lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1").DeepCopy();
 
             // Apply softmax and sample
-            // Log logits to console
-            // Debug.Log("Logits: [" + string.Join(", ", logits.Select(x => x.ToString("F4"))) + "]");
-
+            float maxLogit = logits.Max();  // Get the maximum logit
             float sum = 0;
             float[] probs = new float[logits.Length];
+
             for (int i = 0; i < logits.Length; i++) {
-                probs[i] = Mathf.Exp(logits[i]);
+                probs[i] = Mathf.Exp(logits[i] - maxLogit);  // Subtract maxLogit for numerical stability
                 sum += probs[i];
             }
             for (int i = 0; i < probs.Length; i++) {
                 probs[i] /= sum;
             }
 
-            // Convert model output index to action bits
             int selectedAction = 0;
             float rand = UnityEngine.Random.value;
             float cumsum = 0;
@@ -213,6 +233,13 @@ namespace Footsies
 
         public void resetHiddenStates()
         {
+            // Debug.Log("Resetting hidden states" + Time.frameCount);
+            // Update to properly dispose old tensors before creating new ones
+            if (lastHiddenStates.ContainsKey(true)) lastHiddenStates[true].Dispose();
+            if (lastHiddenStates.ContainsKey(false)) lastHiddenStates[false].Dispose();
+            if (lastCellStates.ContainsKey(true)) lastCellStates[true].Dispose();
+            if (lastCellStates.ContainsKey(false)) lastCellStates[false].Dispose();
+
             lastHiddenStates[true] = new Tensor(1, STATE_SIZE);
             lastHiddenStates[false] = new Tensor(1, STATE_SIZE);
             lastCellStates[true] = new Tensor(1, STATE_SIZE);
@@ -241,6 +268,20 @@ namespace Footsies
             }
             lastCellStates.Clear();
         }
+
+        // Add method to save the log
+        // public void SaveGameLog()
+        // {
+        //     if (gameLog.Count == 0) return;
+
+        //     string path = Path.Combine(Application.persistentDataPath, $"game_log_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+        //     string json = JsonConvert.SerializeObject(gameLog, Formatting.Indented);
+        //     File.WriteAllText(path, json);
+        //     Debug.Log($"Game log saved to: {path}");
+            
+        //     // Clear the log after saving
+        //     gameLog.Clear();
+        // }
     }
 }
 
