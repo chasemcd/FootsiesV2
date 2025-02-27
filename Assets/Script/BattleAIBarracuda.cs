@@ -78,6 +78,91 @@ namespace Footsies
             return new Tensor(1, AIEncoder.ObservationSize, isPlayer1 ? p1Encoding : p2Encoding);
         }
 
+        private int ConvertActionToBits(int selectedAction, bool isPlayer1)
+        {
+            // Handle special charge queue
+            bool queueEmpty = specialChargeQueue[isPlayer1] <= 0;
+            bool isSpecialCharge = selectedAction == 6; // SPECIAL_CHARGE
+
+            // Refill charge queue only if we're not already in a special charge
+            if (isSpecialCharge && queueEmpty)
+            {
+                specialChargeQueue[isPlayer1] = curSpecialChargeDuration;
+            }
+
+            // Convert action to bits
+            int actionBits;
+            if (isPlayer1)
+            {
+                switch (selectedAction)
+                {
+                    case 0: // NONE
+                        actionBits = 0;
+                        break;
+                    case 1: // BACK
+                        actionBits = 1 << 0;  // LEFT
+                        break;
+                    case 2: // FORWARD
+                        actionBits = 1 << 1;  // RIGHT
+                        break;
+                    case 3: // ATTACK
+                        actionBits = 1 << 2;  // ATTACK
+                        break;
+                    case 4: // BACK_ATTACK
+                        actionBits = (1 << 0) | (1 << 2);  // LEFT_ATTACK
+                        break;
+                    case 5: // FORWARD_ATTACK
+                        actionBits = (1 << 1) | (1 << 2);  // RIGHT_ATTACK
+                        break;
+                    case 6: // SPECIAL_CHARGE
+                        actionBits = 0;
+                        break;
+                    default:
+                        actionBits = 0;
+                        break;
+                }
+            }
+            else
+            {
+                switch (selectedAction)
+                {
+                    case 0: // NONE
+                        actionBits = 0;
+                        break;
+                    case 1: // BACK
+                        actionBits = 1 << 1;  // RIGHT
+                        break;
+                    case 2: // FORWARD
+                        actionBits = 1 << 0;  // LEFT
+                        break;
+                    case 3: // ATTACK
+                        actionBits = 1 << 2;  // ATTACK
+                        break;
+                    case 4: // BACK_ATTACK
+                        actionBits = (1 << 1) | (1 << 2);  // RIGHT_ATTACK
+                        break;
+                    case 5: // FORWARD_ATTACK
+                        actionBits = (1 << 0) | (1 << 2);  // LEFT_ATTACK
+                        break;
+                    case 6: // SPECIAL_CHARGE
+                        actionBits = 0;
+                        break;
+                    default:
+                        actionBits = 0;
+                        break;
+                }
+            }
+
+            // Apply special charge effect
+            if (specialChargeQueue[isPlayer1] > 0)
+            {
+                specialChargeQueue[isPlayer1] -= 1;
+                actionBits |= (1 << 2); // Add ATTACK bit
+            }
+
+            return actionBits;
+        }
+
         public int getNextAIInput(bool isPlayer1)
         {
             // Check if we have actions in the queue
@@ -91,17 +176,14 @@ namespace Footsies
             var inputs = new Dictionary<string, Tensor>();
             
             // Add encoded state
-
             var encodedState = encodeGameState(gameState, isPlayer1);
             inputs["obs"] = encodedState;
-            // Debug.Log($"Observation tensor shape: {inputs["obs"].shape}, Values: [{string.Join(", ", inputs["obs"].AsFloats().Select(x => x.ToString("F4")))}]");
             
             // Add previous hidden/cell states
             if (lastHiddenStates.ContainsKey(isPlayer1) && lastCellStates.ContainsKey(isPlayer1)) {
                 inputs["state_in_0"] = lastCellStates[isPlayer1];
                 inputs["state_in_1"] = lastHiddenStates[isPlayer1];
             } else {
-                // Initialize with zeros if no previous state
                 inputs["state_in_0"] = new Tensor(1, STATE_SIZE);
                 inputs["state_in_1"] = new Tensor(1, STATE_SIZE);
             }
@@ -118,15 +200,12 @@ namespace Footsies
             lastCellStates[isPlayer1].Dispose();
             lastHiddenStates[isPlayer1].Dispose();
 
-            // Get logits and states from the correct output names
+            // Get logits and states
             var logits = output.PeekOutput("output").AsFloats();
             lastCellStates[isPlayer1] = output.CopyOutput("state_out_0");
             lastHiddenStates[isPlayer1] = output.CopyOutput("state_out_1");
 
             // Apply softmax and sample
-            // Log logits to console
-            // Debug.Log("Logits: [" + string.Join(", ", logits.Select(x => x.ToString("F4"))) + "]");
-
             float sum = 0;
             float[] probs = new float[logits.Length];
             for (int i = 0; i < logits.Length; i++) {
@@ -137,7 +216,7 @@ namespace Footsies
                 probs[i] /= sum;
             }
 
-            // Convert model output index to action bits
+            // Select action
             int selectedAction = 0;
             float rand = UnityEngine.Random.value;
             float cumsum = 0;
@@ -148,56 +227,10 @@ namespace Footsies
                     break;
                 }
             }
-            
-            // Handle special charge queue
-            bool queueEmpty = specialChargeQueue[isPlayer1] <= 0;
-            bool isSpecialCharge = selectedAction == 6; // SPECIAL_CHARGE
 
-            // Refill charge queue only if we're not already in a special charge
-            if (isSpecialCharge && queueEmpty)
-            {
-                specialChargeQueue[isPlayer1] = curSpecialChargeDuration;
-            }
-
-            // Convert action to bits
-            int actionBits;
-            switch (selectedAction)
-            {
-                case 0: // NONE
-                    actionBits = 0;
-                    break;
-                case 1: // LEFT
-                    actionBits = 1 << 0;
-                    break;
-                case 2: // RIGHT
-                    actionBits = 1 << 1;
-                    break;
-                case 3: // ATTACK
-                    actionBits = 1 << 2;
-                    break;
-                case 4: // LEFT_ATTACK
-                    actionBits = (1 << 0) | (1 << 2);
-                    break;
-                case 5: // RIGHT_ATTACK
-                    actionBits = (1 << 1) | (1 << 2);
-                    break;
-                case 6: // SPECIAL_CHARGE
-                    actionBits = 0;
-                    break;
-                default:
-                    actionBits = 0;
-                    break;
-            }
-
-            // Apply special charge effect
-            if (specialChargeQueue[isPlayer1] > 0)
-            {
-                specialChargeQueue[isPlayer1] -= 1;
-                actionBits |= (1 << 2); // Add ATTACK bit
-            }
-
-            // Fill the queue with the same action FRAME_SKIP times
-            for (int i = 0; i < FRAME_SKIP; i++)
+            // Convert action to bits and fill queue
+            int actionBits = ConvertActionToBits(selectedAction, isPlayer1);
+            for (int i = 0; i < curframeSkip; i++)
             {
                 actionQueue[isPlayer1].Enqueue(actionBits);
             }
