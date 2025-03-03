@@ -25,9 +25,6 @@ namespace Footsies
 
         [DllImport("__Internal")]
         private static extern void SetupUnitySocketListeners();
-
-        [DllImport("__Internal")]
-        private static extern void OnToTitleScreen(string json);
 #endif
 
         void Awake()
