@@ -2,11 +2,11 @@ using UnityEngine;
 using Unity.Barracuda;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-using Newtonsoft.Json;
-using System;
-using static Footsies.BattleCore;
-using UnityEditor.UI;
+// using System.IO;
+// using Newtonsoft.Json;
+// using System;
+// using static Footsies.BattleCore;
+// using UnityEditor.UI;
 
 namespace Footsies
 {
