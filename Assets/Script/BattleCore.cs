@@ -76,9 +76,7 @@ namespace Footsies
         [SerializeField] 
         private AIEncoder encoder = new AIEncoder();
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
-        private string currentModelPath = "4fs-16od-082992f-0.03to0.01-sp";
-        private int currentObservationDelay = 16;
-        private int currentFrameSkip = 4;
+
         private InputData[] recordingP1Input = new InputData[maxRecordingInputFrame];
         private InputData[] recordingP2Input = new InputData[maxRecordingInputFrame];
         private uint currentRecordingInputIndex = 0;
@@ -120,38 +118,6 @@ namespace Footsies
         void Awake()
         {
             ParseCommandLineArgs();
-
-            // Add SocketIO listener for model changes
-            if (SocketIOManager.Instance != null)
-            {
-                SocketIOManager.Instance.Client.On("changeModel", (data) =>
-                {
-                    var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(data.ToString());
-                    string newModelPath = jsonObject["modelPath"].ToString();
-                    int newObservationDelay = Convert.ToInt32(jsonObject["observationDelay"]);
-                    int newFrameSkip = Convert.ToInt32(jsonObject["frameSkip"]);
-
-                    Debug.Log($"Received new model path: {newModelPath}, observation delay: {newObservationDelay}, frame skip: {newFrameSkip}");
-
-                    currentModelPath = newModelPath;
-                    currentObservationDelay = newObservationDelay;
-                    currentFrameSkip = newFrameSkip;
-                    
-                    // If we're in VS CPU mode and the AI is active, update it
-                    if (GameManager.Instance.isVsCPU && barracudaAI != null)
-                    {
-                        barracudaAI.Dispose();
-                        barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
-                    }
-                });
-
-                // Add SocketIO listener for returning to the title screen
-                SocketIOManager.Instance.Client.On("toTitleScreen", (data) =>
-                {
-                    Debug.Log("Received request to return to title screen");
-                    GameManager.Instance.LoadTitleScene();
-                });
-            }
 
             // Setup dictionary from ScriptableObject data
             fighterDataList.ForEach((data) => data.setupDictionary());
@@ -314,11 +280,10 @@ namespace Footsies
 
                     roundUIAnimator.SetTrigger("RoundStart");
 
-                    if (GameManager.Instance.isVsCPU)
+                    if (GameManager.Instance.isVsCPU && barracudaAI == null)
                     {
                         // Debug.Log("Initializing Barracuda AI...");
-                        // Use currentModelPath instead of hardcoded path
-                        barracudaAI = new BattleAIBarracuda(this, currentModelPath, currentObservationDelay, currentFrameSkip);
+                        barracudaAI = new BattleAIBarracuda(this);
                     }
 
                     break;
@@ -352,11 +317,11 @@ namespace Footsies
                     fighter2.ClearInput();
 
                     battleAI = null;
-                    if (barracudaAI != null)
-                    {
-                        barracudaAI.Dispose();
-                        barracudaAI = null;
-                    }
+                    // if (barracudaAI != null)
+                    // {
+                    //     barracudaAI.Dispose();
+                    //     barracudaAI = null;
+                    // }
                     // if (barracudaAI != null)
                     // {
                     //     barracudaAI.SaveGameLog();
@@ -794,11 +759,17 @@ namespace Footsies
             var deadFighter = _fighters.Find((f) => f.isDead);
             string winner = deadFighter == null ? "Tie" : (deadFighter == fighter1 ? "P2" : "P1");
 
+
+            
             var roundResults = new Dictionary<string, object>
             {
                 { "winner", winner },
                 { "totalFrames", frameCount },
-                { "currentBattleModel", currentModelPath },
+                { "currentBattleModel", barracudaAI.curModelPath },
+                { "currentObservationDelay", barracudaAI.curObservationDelay },
+                { "currentFrameSkip", barracudaAI.curFrameSkip },
+                { "currentInferenceCadence", barracudaAI.curInferenceCadence },
+                { "currentSoftmaxTemperature", barracudaAI.curSoftmaxTemperature },
                 { "player1Actions", new Dictionary<string, int[]> {
                     { "actions", player1Actions.Select(a => a.action).ToArray() },
                     { "frames", player1Actions.Select(a => a.frame).ToArray() }
@@ -810,7 +781,17 @@ namespace Footsies
             };
 
             // Emit the results through SocketIO
-            SocketIOManager.Instance.EmitRoundResults(roundResults);
+            // SocketIOManager.Instance.EmitRoundResults(new Dictionary<string, object> {
+            //     { "winner", winner },
+                
+            // });
+            SocketIOManager.Instance.EmitRoundResults(roundResults); 
+        }
+
+        // Add getter for barracudaAI
+        public BattleAIBarracuda GetBarracudaAI()
+        {
+            return barracudaAI;
         }
 
     }

@@ -6,6 +6,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System;
 using static Footsies.BattleCore;
+using UnityEditor.UI;
 
 namespace Footsies
 {
@@ -26,6 +27,12 @@ namespace Footsies
 
         private int curframeSkip = 4;
 
+        public float curSoftmaxTemperature = 1.0f;
+        public int curObservationDelay = 16;
+        public int curInferenceCadence = 4;
+        public int curFrameSkip = 4;
+        public string curModelPath = "4fs-16od-082992f-0.03to0.01-sp";
+
         // Add new fields for special charge tracking
         public Dictionary<bool, int> specialChargeQueue = new Dictionary<bool, int>();
         private int curSpecialChargeDuration;
@@ -36,14 +43,23 @@ namespace Footsies
         // Add at class level
         // private List<Dictionary<string, object>> gameLog = new List<Dictionary<string, object>>();
 
-        public BattleAIBarracuda(BattleCore core, string modelPath, int observationDelay, int frameSkip)
-        {
-            battleCore = core;
-            encoder = new AIEncoder(observationDelay);
-            curframeSkip = frameSkip;
-            curSpecialChargeDuration = 60 / frameSkip;
+        private int frameCounter = 0;
 
-            // Load model from Resources
+        public void updateBotSettings(string modelPath, int observationDelay, int frameSkip, int inferenceCadence, float softmaxTemperature)
+        {
+            if (modelPath != curModelPath) {
+                curModelPath = modelPath;
+                initializeModel(modelPath);
+            }
+            curObservationDelay = observationDelay;
+            curFrameSkip = frameSkip;
+            curInferenceCadence = inferenceCadence;
+            curSpecialChargeDuration = 60 / curframeSkip;
+            curSoftmaxTemperature = softmaxTemperature;
+            encoder.setObservationDelay(curObservationDelay);
+        }
+
+        void initializeModel(string modelPath) {
             var modelAsset = Resources.Load<NNModel>(modelPath);
             if (modelAsset == null)
             {
@@ -52,6 +68,25 @@ namespace Footsies
             }
             
             Initialize(modelAsset);
+        }
+
+        public BattleAIBarracuda(BattleCore core)
+        {
+            battleCore = core;
+            encoder = new AIEncoder(curObservationDelay);
+            curSpecialChargeDuration = 60 / curframeSkip;
+
+            // Load model from Resources
+            // var modelAsset = Resources.Load<NNModel>(modelPath);
+            // if (modelAsset == null)
+            // {
+            //     Debug.LogError($"Failed to load Barracuda model from Resources path: {modelPath}");
+            //     return;
+            // }
+            
+            // Initialize(modelAsset);
+
+            initializeModel(curModelPath);
             
             specialChargeQueue[true] = 0;
             specialChargeQueue[false] = 0;
@@ -190,8 +225,68 @@ namespace Footsies
             // Check if we have actions in the queue
             if (actionQueue[isPlayer1].Count > 0)
             {
+                // If it's time for an inference update but we still have actions, do the inference
+                // but don't use the new action
+                if (frameCounter % curInferenceCadence == 0)
+                {
+                    UpdateHiddenStates(isPlayer1);
+                }
+                frameCounter++;
                 return actionQueue[isPlayer1].Dequeue();
             }
+
+            // Reset frame counter when getting new actions to keep in sync with frame skip
+            frameCounter = 0;
+            
+            // No actions in queue - run full inference and get new action
+            var selectedAction = RunInference(isPlayer1);
+            
+            // Convert action to bits and fill queue
+            int actionBits = ConvertActionToBits(selectedAction, isPlayer1);
+            for (int i = 0; i < curFrameSkip; i++)
+            {
+                actionQueue[isPlayer1].Enqueue(actionBits);
+            }
+
+            frameCounter++;
+            return actionQueue[isPlayer1].Dequeue();
+        }
+
+        private void UpdateHiddenStates(bool isPlayer1)
+        {
+            var gameState = battleCore.GetGameState();
+            var encoding = encodeGameState(gameState, isPlayer1);
+            
+            var inputs = new Dictionary<string, Tensor>();
+            inputs["obs"] = encoding;
+            inputs["state_in_0"] = lastCellStates[isPlayer1];
+            inputs["state_in_1"] = lastHiddenStates[isPlayer1];
+            inputs["seq_lens"] = new Tensor(new[] { 1 }, new float[] { 1 });
+
+            var output = worker.Execute(inputs);
+
+            // Clean up input tensors
+            foreach (var tensor in inputs.Values)
+            {
+                tensor.Dispose();
+            }
+            encoding.Dispose();
+
+
+            // Dispose previous states before updating
+            if (lastCellStates.ContainsKey(isPlayer1))
+                lastCellStates[isPlayer1].Dispose();
+            if (lastHiddenStates.ContainsKey(isPlayer1))
+                lastHiddenStates[isPlayer1].Dispose();
+
+
+            // Update the state assignments
+            lastCellStates[isPlayer1] = output.PeekOutput("state_out_0").DeepCopy();
+            lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1").DeepCopy();
+        }
+
+        private int RunInference(bool isPlayer1)
+        {
             var gameState = battleCore.GetGameState();
             var encoding = encodeGameState(gameState, isPlayer1);
             
@@ -203,41 +298,32 @@ namespace Footsies
 
             var output = worker.Execute(inputs);
             var logits = output.PeekOutput("output").AsFloats().ToArray();
-            
-            // Only log data during Fight state
-            // if (battleCore.roundState == RoundStateType.Fight)
-            // {
-            //     var frameData = new Dictionary<string, object>
-            //     {
-            //         {"frame", Time.frameCount},
-            //         {"encoding", encoding.AsFloats().ToArray()},
-            //         {"logits", logits},
-            //         {"isPlayer1", isPlayer1},
-            //         {"hidden_state_in", lastHiddenStates[isPlayer1].AsFloats().ToArray()},
-            //         {"cell_state_in", lastCellStates[isPlayer1].AsFloats().ToArray()},
-            //         {"hidden_state_out", output.PeekOutput("state_out_1").AsFloats().ToArray()},
-            //         {"cell_state_out", output.PeekOutput("state_out_0").AsFloats().ToArray()}
-            //     };
-            //     gameLog.Add(frameData);
-            // }
 
             // Clean up input tensors
             foreach (var tensor in inputs.Values)
             {
                 tensor.Dispose();
             }
+            encoding.Dispose();
 
-            // Update the state assignments to create new tensors
+
+            // Dispose previous states before updating
+            if (lastCellStates.ContainsKey(isPlayer1))
+                lastCellStates[isPlayer1].Dispose();
+            if (lastHiddenStates.ContainsKey(isPlayer1))
+                lastHiddenStates[isPlayer1].Dispose();
+
+            // Update the state assignments
             lastCellStates[isPlayer1] = output.PeekOutput("state_out_0").DeepCopy();
             lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1").DeepCopy();
 
             // Apply softmax and sample
-            float maxLogit = logits.Max();  // Get the maximum logit
+            float maxLogit = logits.Max();
             float sum = 0;
             float[] probs = new float[logits.Length];
 
             for (int i = 0; i < logits.Length; i++) {
-                probs[i] = Mathf.Exp(logits[i] - maxLogit);  // Subtract maxLogit for numerical stability
+                probs[i] = Mathf.Exp((logits[i] - maxLogit) / curSoftmaxTemperature);
                 sum += probs[i];
             }
             for (int i = 0; i < probs.Length; i++) {
@@ -256,14 +342,7 @@ namespace Footsies
                 }
             }
 
-            // Convert action to bits and fill queue
-            int actionBits = ConvertActionToBits(selectedAction, isPlayer1);
-            for (int i = 0; i < curframeSkip; i++)
-            {
-                actionQueue[isPlayer1].Enqueue(actionBits);
-            }
-
-            return actionQueue[isPlayer1].Dequeue();
+            return selectedAction;
         }
 
         public void resetObsHistory()
@@ -288,12 +367,12 @@ namespace Footsies
 
         public void Dispose()
         {
-            // Dispose of worker
-            if (worker != null)
-            {
-                worker.Dispose();
-                worker = null;
-            }
+            // // Dispose of worker
+            // if (worker != null)
+            // {
+            //     worker.Dispose();
+            //     worker = null;
+            // }
 
             // Dispose of hidden and cell states
             foreach (var tensor in lastHiddenStates.Values)

@@ -36,7 +36,7 @@ namespace Footsies
         public static int ObservationSize => 81; // Kept for compatibility
 
         private readonly Queue<float[]>[] _encodingHistory;
-        private readonly int _observationDelay;
+        private int _observationDelay;
 
         public AIEncoder(int observationDelay = 16)
         {
@@ -53,6 +53,11 @@ namespace Footsies
             _encodingHistory[1].Clear();
         }
 
+        public void setObservationDelay(int observationDelay)
+        {
+            _observationDelay = observationDelay;
+        }
+
         public (float[] player1Encoding, float[] player2Encoding) EncodeGameState(GameState gameState)
         {
 
@@ -65,6 +70,9 @@ namespace Footsies
             float[] delayedP1Features = p1Features;
             float[] delayedP2Features = p2Features;
             
+            // TODO(chase): This is a bug that's currently also present in the Python code.
+            // Instead of setting to 0 if we don't have enough history, we should set it to 
+            // be the oldest available state in history. 
             int effectiveDelay = (_encodingHistory[0].Count < _observationDelay) ? 0 : _observationDelay;
             
             if (effectiveDelay > 0)
