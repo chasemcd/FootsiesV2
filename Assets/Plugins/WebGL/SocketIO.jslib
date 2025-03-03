@@ -31,11 +31,11 @@ mergeInto(LibraryManager.library, {
                 if (window.socket && window.socket.connected) {
                     window.socket.on('updateBotSettings', (data) => {
                         const jsonString = JSON.stringify(data);
-                        unityInstance.SendMessage('SocketIOManager', 'updateBotSettings', jsonString);
+                        window.unityInstance.SendMessage('SocketIOManager', 'updateBotSettings', jsonString);
                     });
                     
                     window.socket.on('toTitleScreen', (data) => {
-                        unityInstance.SendMessage('SocketIOManager', 'OnToTitleScreen', data);
+                        window.unityInstance.SendMessage('SocketIOManager', 'OnToTitleScreen', data);
                     });
                     
                     console.log('Socket.IO listeners setup complete');
