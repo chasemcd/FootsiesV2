@@ -256,40 +256,44 @@ namespace Footsies
         {
             var gameState = battleCore.GetGameState();
             var encoding = encodeGameState(gameState, isPlayer1);
-            
+
             var inputs = new Dictionary<string, Tensor>();
             inputs["obs"] = encoding;
             inputs["state_in_0"] = lastCellStates[isPlayer1];
             inputs["state_in_1"] = lastHiddenStates[isPlayer1];
             inputs["seq_lens"] = new Tensor(new[] { 1 }, new float[] { 1 });
 
+            // Execute the worker
             var output = worker.Execute(inputs);
 
-            // Clean up input tensors
+            // Dispose input tensors
             foreach (var tensor in inputs.Values)
             {
                 tensor.Dispose();
             }
-            encoding.Dispose();
 
+            // Dispose old states before overwriting
+            if (lastCellStates.ContainsKey(isPlayer1)) lastCellStates[isPlayer1].Dispose();
+            if (lastHiddenStates.ContainsKey(isPlayer1)) lastHiddenStates[isPlayer1].Dispose();
 
-            // Dispose previous states before updating
-            if (lastCellStates.ContainsKey(isPlayer1))
-                lastCellStates[isPlayer1].Dispose();
-            if (lastHiddenStates.ContainsKey(isPlayer1))
-                lastHiddenStates[isPlayer1].Dispose();
+            // Extract new hidden state tensors
+            var newCellState = output.PeekOutput("state_out_0");
+            var newHiddenState = output.PeekOutput("state_out_1");
 
+            // Copy and dispose immediately after copying
+            lastCellStates[isPlayer1] = newCellState.DeepCopy();
+            lastHiddenStates[isPlayer1] = newHiddenState.DeepCopy();
 
-            // Update the state assignments
-            lastCellStates[isPlayer1] = output.PeekOutput("state_out_0").DeepCopy();
-            lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1").DeepCopy();
+            newCellState.Dispose();
+            newHiddenState.Dispose();
         }
 
-        private int RunInference(bool isPlayer1)
+
+       private int RunInference(bool isPlayer1)
         {
             var gameState = battleCore.GetGameState();
             var encoding = encodeGameState(gameState, isPlayer1);
-            
+
             var inputs = new Dictionary<string, Tensor>();
             inputs["obs"] = encoding;
             inputs["state_in_0"] = lastCellStates[isPlayer1];
@@ -297,27 +301,34 @@ namespace Footsies
             inputs["seq_lens"] = new Tensor(new[] { 1 }, new float[] { 1 });
 
             var output = worker.Execute(inputs);
-            var logits = output.PeekOutput("output").AsFloats().ToArray();
 
-            // Clean up input tensors
+            // Dispose input tensors
             foreach (var tensor in inputs.Values)
             {
                 tensor.Dispose();
             }
-            encoding.Dispose();
 
+            // Dispose old states before overwriting
+            if (lastCellStates.ContainsKey(isPlayer1)) lastCellStates[isPlayer1].Dispose();
+            if (lastHiddenStates.ContainsKey(isPlayer1)) lastHiddenStates[isPlayer1].Dispose();
 
-            // Dispose previous states before updating
-            if (lastCellStates.ContainsKey(isPlayer1))
-                lastCellStates[isPlayer1].Dispose();
-            if (lastHiddenStates.ContainsKey(isPlayer1))
-                lastHiddenStates[isPlayer1].Dispose();
+            // Extract output tensors
+            var newCellState = output.PeekOutput("state_out_0");
+            var newHiddenState = output.PeekOutput("state_out_1");
+            var logitsTensor = output.PeekOutput("output");
 
-            // Update the state assignments
-            lastCellStates[isPlayer1] = output.PeekOutput("state_out_0").DeepCopy();
-            lastHiddenStates[isPlayer1] = output.PeekOutput("state_out_1").DeepCopy();
+            // Copy and dispose immediately after copying
+            lastCellStates[isPlayer1] = newCellState.DeepCopy();
+            lastHiddenStates[isPlayer1] = newHiddenState.DeepCopy();
 
-            // Apply softmax and sample
+            newCellState.Dispose();
+            newHiddenState.Dispose();
+
+            // Extract logits and dispose tensor
+            float[] logits = logitsTensor.AsFloats().ToArray();
+            logitsTensor.Dispose();
+
+            // Apply softmax and sample action
             float maxLogit = logits.Max();
             float sum = 0;
             float[] probs = new float[logits.Length];
@@ -330,7 +341,6 @@ namespace Footsies
                 probs[i] /= sum;
             }
 
-            // Select action
             int selectedAction = 0;
             float rand = UnityEngine.Random.value;
             float cumsum = 0;
@@ -344,6 +354,7 @@ namespace Footsies
 
             return selectedAction;
         }
+
 
         public void resetObsHistory()
         {
@@ -367,12 +378,12 @@ namespace Footsies
 
         public void Dispose()
         {
-            // // Dispose of worker
-            // if (worker != null)
-            // {
-            //     worker.Dispose();
-            //     worker = null;
-            // }
+            // Dispose of worker
+            if (worker != null)
+            {
+                worker.Dispose();
+                worker = null;
+            }
 
             // Dispose of hidden and cell states
             foreach (var tensor in lastHiddenStates.Values)

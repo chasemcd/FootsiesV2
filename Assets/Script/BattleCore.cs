@@ -788,6 +788,14 @@ namespace Footsies
             SocketIOManager.Instance.EmitRoundResults(roundResults); 
         }
 
+        void OnDestroy()
+        {
+            if (barracudaAI != null)
+            {
+                barracudaAI.Dispose();
+            }
+        }
+
         // Add getter for barracudaAI
         public BattleAIBarracuda GetBarracudaAI()
         {
