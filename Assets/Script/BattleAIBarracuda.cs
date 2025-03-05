@@ -106,6 +106,12 @@ namespace Footsies
         {
             if (model == null)
                 throw new System.ArgumentNullException("Model asset cannot be null");
+            
+            // Dispose of existing worker if one exists
+            if (worker != null)
+            {
+                worker.Dispose();
+            }
                 
             modelAsset = model;
             m_RuntimeModel = ModelLoader.Load(modelAsset);
