@@ -34,6 +34,17 @@ namespace Footsies
         private void Start()
         {
             Debug.Log("GameManager Start() called");
+            
+            // Create SocketIOManager if it doesn't exist
+            if (SocketIOManager.Instance == null)
+            {
+                GameObject socketManager = new GameObject("SocketIOManager");
+                socketManager.AddComponent<SocketIOManager>();
+            }
+            
+            // Now we can safely initialize the socket
+            SocketIOManager.Instance.InitializeSocket();
+            
             LoadTitleScene();
         }
 

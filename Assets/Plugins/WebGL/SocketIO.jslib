@@ -15,6 +15,21 @@ mergeInto(LibraryManager.library, {
         `);
     },
     
+    EmitUnityEpisodeStart: function(json) {        
+        window.eval(`
+            try {
+                const data = JSON.parse('${UTF8ToString(json)}');
+                if (window.socket && window.socket.connected) {
+                    window.socket.emit('unityEpisodeStart', data);
+                } else {
+                    console.warn('Socket.IO is not connected. Cannot emit episode start.');
+                }
+            } catch (e) {
+                console.error('Error parsing/emitting episode start:', e);
+            }
+        `);
+    },
+    
     UnityConnectSocketIO: function() {
         window.eval(`
             if (window.socket) {

@@ -24,6 +24,9 @@ namespace Footsies
         private static extern void EmitUnityEpisodeResults(string json);
 
         [DllImport("__Internal")]
+        private static extern void EmitUnityEpisodeStart(string json);
+
+        [DllImport("__Internal")]
         private static extern void SetupUnitySocketListeners();
 #endif
 
@@ -33,7 +36,6 @@ namespace Footsies
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
-                InitializeSocket();
             }
             else
             {
@@ -41,11 +43,17 @@ namespace Footsies
             }
         }
 
-        private async void InitializeSocket()
+        public async void InitializeSocket()
         {
+            if (Client != null && Client.Connected)
+            {
+                Debug.Log("Socket already initialized and connected");
+                return;
+            }
+
             try
             {
-                // Debug.Log("Initializing Socket.IO connection...");
+                Debug.Log("Initializing Socket.IO connection...");
                 Client = new SocketIOClient.SocketIO("http://127.0.0.1:5704", new SocketIOOptions
                 {
                     Reconnection = true,
@@ -110,12 +118,20 @@ namespace Footsies
             string json = JsonConvert.SerializeObject(results);
             EmitUnityEpisodeResults(json);
 #else
-            Debug.Log("Trying to emit round results via SocketIO..." + Client.Connected + " " + Client);
-            if (Client != null && Client.Connected)
+            if (Client == null)
             {
-                Debug.Log("Emitting round results via SocketIO");
-                Client.EmitAsync("unityEpisodeEnd", results);
+                Debug.LogWarning("Cannot emit round results - SocketIO Client is null");
+                return;
             }
+
+            if (!Client.Connected)
+            {
+                Debug.LogWarning("Cannot emit round results - SocketIO not connected yet");
+                return;
+            }
+
+            Debug.Log("Emitting round results via SocketIO");
+            Client.EmitAsync("unityEpisodeEnd", results);
 #endif
         }
 
@@ -126,6 +142,29 @@ namespace Footsies
             EmitRoundResults(json);
         }
         #endif
+
+        public void EmitRoundStart(Dictionary<string, object> data)
+        {
+#if UNITY_WEBGL
+            string json = JsonConvert.SerializeObject(data);
+            EmitUnityEpisodeStart(json);
+#else
+            if (Client == null)
+            {
+                Debug.LogWarning("Cannot emit round start - SocketIO Client is null");
+                return;
+            }
+
+            if (!Client.Connected)
+            {
+                Debug.LogWarning("Cannot emit round start - SocketIO not connected yet");
+                return;
+            }
+
+            Debug.Log("Emitting round start via SocketIO");
+            Client.EmitAsync("unityEpisodeStart", data);
+#endif
+        }
 
         // This method will be called from JavaScript in WebGL
         public void updateBotSettings(string jsonData)

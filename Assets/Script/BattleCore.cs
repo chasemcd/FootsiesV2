@@ -148,11 +148,11 @@ namespace Footsies
                 ChangeRoundState(RoundStateType.Fight);
             }
 
-            if (SocketIOManager.Instance == null)
-            {
-                GameObject go = new GameObject("SocketIOManager");
-                go.AddComponent<SocketIOManager>();
-            }
+            // if (SocketIOManager.Instance == null)
+            // {
+            //     GameObject go = new GameObject("SocketIOManager");
+            //     go.AddComponent<SocketIOManager>();
+            // }
         }
 
         private void ParseCommandLineArgs()
@@ -285,6 +285,8 @@ namespace Footsies
                         // Debug.Log("Initializing Barracuda AI...");
                         barracudaAI = new BattleAIBarracuda(this);
                     }
+
+                    EmitRoundStart();
 
                     break;
                 case RoundStateType.Fight:
@@ -749,17 +751,16 @@ namespace Footsies
 
         private void EmitRoundResults()
         {
-            // Skip if SocketIOManager is not available
-            if (SocketIOManager.Instance == null)
+            // Skip if SocketIOManager is not available or using gRPC
+            if (SocketIOManager.Instance == null || useGrpcController)
             {
-                Debug.LogWarning("SocketIOManager.Instance is null - skipping round results emission");
+                Debug.LogWarning("Skipping round results emission - " + 
+                    (useGrpcController ? "using gRPC" : "SocketIOManager.Instance is null"));
                 return;
             }
 
             var deadFighter = _fighters.Find((f) => f.isDead);
             string winner = deadFighter == null ? "Tie" : (deadFighter == fighter1 ? "P2" : "P1");
-
-
             
             var roundResults = new Dictionary<string, object>
             {
@@ -780,12 +781,29 @@ namespace Footsies
                 }}
             };
 
-            // Emit the results through SocketIO
-            // SocketIOManager.Instance.EmitRoundResults(new Dictionary<string, object> {
-            //     { "winner", winner },
-                
-            // });
             SocketIOManager.Instance.EmitRoundResults(roundResults); 
+        }
+
+        private void EmitRoundStart()
+        {
+            // Skip if SocketIOManager is not available or using gRPC
+            if (SocketIOManager.Instance == null || useGrpcController)
+            {
+                Debug.LogWarning("Skipping round start emission - " + 
+                    (useGrpcController ? "using gRPC" : "SocketIOManager.Instance is null"));
+                return;
+            }
+
+            var roundStartData = new Dictionary<string, object>
+            {
+                { "currentBattleModel", barracudaAI?.curModelPath },
+                { "currentObservationDelay", barracudaAI?.curObservationDelay },
+                { "currentFrameSkip", barracudaAI?.curFrameSkip },
+                { "currentInferenceCadence", barracudaAI?.curInferenceCadence },
+                { "currentSoftmaxTemperature", barracudaAI?.curSoftmaxTemperature }
+            };
+
+            SocketIOManager.Instance.EmitRoundStart(roundStartData);
         }
 
         void OnDestroy()
