@@ -115,6 +115,39 @@ namespace Footsies
             }
         }
 
+        private class InputLog
+        {
+            public int action;
+            public int frame;
+            public bool isPlayer1;
+
+            public InputLog(int action, int frame, bool isPlayer1)
+            {
+                this.action = action;
+                this.frame = frame;
+                this.isPlayer1 = isPlayer1;
+            }
+        }
+
+        private class ActionIDLog
+        {
+            public int actionID;
+            public int frame;
+            public bool isPlayer1;
+
+            public ActionIDLog(int actionID, int frame, bool isPlayer1)
+            {
+                this.actionID = actionID;
+                this.frame = frame;
+                this.isPlayer1 = isPlayer1;
+            }
+        }
+
+        private List<InputLog> player1Inputs = new List<InputLog>();
+        private List<InputLog> player2Inputs = new List<InputLog>();
+        private List<ActionIDLog> player1ActionIDs = new List<ActionIDLog>();
+        private List<ActionIDLog> player2ActionIDs = new List<ActionIDLog>();
+
         void Awake()
         {
             ParseCommandLineArgs();
@@ -425,7 +458,6 @@ namespace Footsies
             }
 
             var time = Time.fixedTime - roundStartTime;
-
             InputData p1Input = new InputData();
 
             // Check if serverp1input is set, if so use it and set it to null
@@ -739,13 +771,28 @@ namespace Footsies
 
         private void LogFighterActions(Fighter fighter, bool isPlayer1)
         {
-            if (fighter.getInput(0) != fighter.getInput(1))
+            // Log input changes
+            if (frameCount == 0 || fighter.getInput(0) != fighter.getInput(1))
             {
-                var actionLog = new ActionLog(fighter.getInput(0), frameCount, isPlayer1);
+                var inputLog = new InputLog(fighter.getInput(0), frameCount, isPlayer1);
                 if (isPlayer1)
-                    player1Actions.Add(actionLog);
+                    player1Inputs.Add(inputLog);
                 else
-                    player2Actions.Add(actionLog);
+                    player2Inputs.Add(inputLog);
+            }
+
+            // Log actionID changes
+            var lastActionIDLog = isPlayer1 ? 
+                (player1ActionIDs.Count > 0 ? player1ActionIDs[player1ActionIDs.Count - 1] : null) : 
+                (player2ActionIDs.Count > 0 ? player2ActionIDs[player2ActionIDs.Count - 1] : null);
+
+            if (frameCount == 0 || (lastActionIDLog != null && lastActionIDLog.actionID != fighter.currentActionID))
+            {
+                var actionIDLog = new ActionIDLog(fighter.currentActionID, frameCount, isPlayer1);
+                if (isPlayer1)
+                    player1ActionIDs.Add(actionIDLog);
+                else
+                    player2ActionIDs.Add(actionIDLog);
             }
         }
 
@@ -771,13 +818,29 @@ namespace Footsies
                 { "currentFrameSkip", barracudaAI.curFrameSkip },
                 { "currentInferenceCadence", barracudaAI.curInferenceCadence },
                 { "currentSoftmaxTemperature", barracudaAI.curSoftmaxTemperature },
-                { "player1Actions", new Dictionary<string, int[]> {
-                    { "actions", player1Actions.Select(a => a.action).ToArray() },
-                    { "frames", player1Actions.Select(a => a.frame).ToArray() }
+                { "player1Inputs", new Dictionary<string, int[]> {
+                    { "actions", player1Inputs.Select(a => a.action).ToArray() },
+                    { "frames", player1Inputs.Select(a => a.frame).ToArray() }
                 }},
-                { "player2Actions", new Dictionary<string, int[]> {
-                    { "actions", player2Actions.Select(a => a.action).ToArray() },
-                    { "frames", player2Actions.Select(a => a.frame).ToArray() }
+                { "player2Inputs", new Dictionary<string, int[]> {
+                    { "actions", player2Inputs.Select(a => a.action).ToArray() },
+                    { "frames", player2Inputs.Select(a => a.frame).ToArray() }
+                }},
+                { "player1ActionIDs", new Dictionary<string, int[]> {
+                    { "actionIDs", player1ActionIDs.Select(a => a.actionID).ToArray() },
+                    { "frames", player1ActionIDs.Select(a => a.frame).ToArray() }
+                }},
+                { "player2ActionIDs", new Dictionary<string, int[]> {
+                    { "actionIDs", player2ActionIDs.Select(a => a.actionID).ToArray() },
+                    { "frames", player2ActionIDs.Select(a => a.frame).ToArray() }
+                }},
+                { "player1FinalState", new Dictionary<string, int> {
+                    { "guardHealth", fighter1.guardHealth },
+                    { "currentActionID", fighter1.currentActionID }
+                }},
+                { "player2FinalState", new Dictionary<string, int> {
+                    { "guardHealth", fighter2.guardHealth },
+                    { "currentActionID", fighter2.currentActionID }
                 }}
             };
 
