@@ -391,7 +391,7 @@ namespace Footsies
 
                     // Clean up at the end of each round
                     ClearRoundLogs();
-                    System.GC.Collect();
+                    GC.Collect();
                     Resources.UnloadUnusedAssets();
                     
                     break;
