@@ -389,6 +389,11 @@ namespace Footsies
                     }
                     EmitRoundResults();
 
+                    // Clean up at the end of each round
+                    ClearRoundLogs();
+                    System.GC.Collect();
+                    Resources.UnloadUnusedAssets();
+                    
                     break;
             }
         }
@@ -875,10 +880,7 @@ namespace Footsies
 
         void OnDestroy()
         {
-            if (barracudaAI != null)
-            {
-                barracudaAI.Dispose();
-            }
+            CleanupResources();
         }
 
         // Add getter for barracudaAI
