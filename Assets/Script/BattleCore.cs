@@ -297,12 +297,16 @@ namespace Footsies
                     if(fighter1RoundWon >= maxRoundWon
                         || fighter2RoundWon >= maxRoundWon)
                     {
+                        // Clean up before loading title scene
+                        CleanupResources();
                         GameManager.Instance.LoadTitleScene();
                     }
 
                     break;
                 case RoundStateType.Intro:
-
+                    // Clear logs at the start of each round
+                    ClearRoundLogs();
+                    
                     fighter1.SetupBattleStart(fighterDataList[0], new Vector2(-2f, 0f), true);
                     fighter2.SetupBattleStart(fighterDataList[0], new Vector2(2f, 0f), false);
 
@@ -881,6 +885,42 @@ namespace Footsies
         public BattleAIBarracuda GetBarracudaAI()
         {
             return barracudaAI;
+        }
+
+        private void ClearRoundLogs()
+        {
+            // Clear all logging lists
+            player1Actions.Clear();
+            player2Actions.Clear();
+            player1Inputs.Clear();
+            player2Inputs.Clear();
+            player1ActionIDs.Clear();
+            player2ActionIDs.Clear();
+            
+            // Clear recording arrays
+            System.Array.Clear(recordingP1Input, 0, recordingP1Input.Length);
+            System.Array.Clear(recordingP2Input, 0, recordingP2Input.Length);
+            System.Array.Clear(lastRoundP1Input, 0, lastRoundP1Input.Length);
+            System.Array.Clear(lastRoundP2Input, 0, lastRoundP2Input.Length);
+        }
+
+        private void CleanupResources()
+        {
+            // Properly dispose of AI resources
+            if (barracudaAI != null)
+            {
+                barracudaAI.Dispose();
+                barracudaAI = null;
+            }
+
+            // Clear all logs and recordings
+            ClearRoundLogs();
+            
+            // Clear fighters list
+            _fighters.Clear();
+            
+            // Clear any other resources that might be hanging around
+            encoder.resetObsHistory();
         }
 
     }
