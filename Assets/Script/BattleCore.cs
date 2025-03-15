@@ -74,7 +74,11 @@ namespace Footsies
         private BattleAI battleAI = null;
         private BattleAIBarracuda barracudaAI = null;
         [SerializeField] 
-        private AIEncoder encoder = new AIEncoder();
+        private AIEncoder encoder = new AIEncoder(4);
+        // NOTE(chase): 4 is the default for 16 observation delay 
+        // divided by 4 frame skip, since inference cadence is every
+        // 4 frames we only delay by 4 (instead of 16 which is the actual
+        // old frame we're getting). 
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
 
         private InputData[] recordingP1Input = new InputData[maxRecordingInputFrame];

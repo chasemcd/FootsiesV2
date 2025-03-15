@@ -77,9 +77,14 @@ namespace Footsies
             
             if (effectiveDelay > 0)
             {
-                delayedP1Features = _encodingHistory[0].ElementAt(_encodingHistory[0].Count - _observationDelay);
-                delayedP2Features = _encodingHistory[1].ElementAt(_encodingHistory[1].Count - _observationDelay);
-            }
+                int retrievalIndex = _encodingHistory[0].Count - _observationDelay;
+                // Debug.Log($"Retrieving observation at index {retrievalIndex} from history of size {_encodingHistory[0].Count} with delay {_observationDelay}");
+                delayedP1Features = _encodingHistory[0].ElementAt(retrievalIndex);
+                delayedP2Features = _encodingHistory[1].ElementAt(retrievalIndex);
+            } 
+            // else {
+            //     Debug.Log($"No delay, using current state for both players {_encodingHistory[0].Count}");
+            // }
 
             // Store current encodings in history
             _encodingHistory[0].Enqueue(p1Features);

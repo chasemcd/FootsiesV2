@@ -56,7 +56,7 @@ namespace Footsies
             curInferenceCadence = inferenceCadence;
             curSpecialChargeDuration = 60 / curframeSkip;
             curSoftmaxTemperature = softmaxTemperature;
-            encoder.setObservationDelay(curObservationDelay);
+            encoder.setObservationDelay(curObservationDelay / curFrameSkip);
         }
 
         void initializeModel(string modelPath) {
@@ -73,7 +73,7 @@ namespace Footsies
         public BattleAIBarracuda(BattleCore core)
         {
             battleCore = core;
-            encoder = new AIEncoder(curObservationDelay);
+            encoder = new AIEncoder(curObservationDelay / curFrameSkip);
             curSpecialChargeDuration = 60 / curframeSkip;
 
             // Load model from Resources
