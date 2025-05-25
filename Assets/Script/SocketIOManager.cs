@@ -3,7 +3,9 @@ using System.Runtime.InteropServices;
 #endif
 using UnityEngine;
 using System.Collections.Generic;
+#if !UNITY_WEBGL && !UNITY_STANDALONE_OSX
 using SocketIOClient;
+#endif
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -14,7 +16,9 @@ namespace Footsies
     public class SocketIOManager : MonoBehaviour
     {
         public static SocketIOManager Instance { get; private set; }
+#if !UNITY_WEBGL && !UNITY_STANDALONE_OSX
         public SocketIOClient.SocketIO Client { get; private set; }
+#endif
 
 #if UNITY_WEBGL
         [DllImport("__Internal")]
@@ -45,6 +49,12 @@ namespace Footsies
 
         public async void InitializeSocket()
         {
+#if UNITY_STANDALONE_OSX
+            Debug.Log("SocketIO is disabled on Mac");
+            return;
+#elif UNITY_WEBGL
+            SetupUnitySocketListeners();
+#else
             if (Client != null && Client.Connected)
             {
                 Debug.Log("Socket already initialized and connected");
@@ -77,30 +87,26 @@ namespace Footsies
                     Debug.LogError($"Socket.IO Error: {e}");
                 };
 
-                #if UNITY_WEBGL
-                    SetupUnitySocketListeners();
-                #else
-                    Client.On("updateBotSettings", (response) =>
-                    {
-                        Debug.Log("Got updateBotSettings message.");
-                        try {
-                            Debug.Log("Raw response: " + response.ToString());
-                            var settings = JsonDocument.Parse(response.ToString()).RootElement.EnumerateArray().First();
-                            string jsonData = settings.GetRawText();
-                            Debug.Log("Converted jsonData: " + jsonData);
-                            UnityMainThreadDispatcher.Instance.Enqueue(() => updateBotSettings(jsonData));
-                        }
-                        catch (Exception e) {
-                            Debug.LogError($"Error processing updateBotSettings response: {e.Message}\nStack trace: {e.StackTrace}");
-                        }
-                    });
+                Client.On("updateBotSettings", (response) =>
+                {
+                    Debug.Log("Got updateBotSettings message.");
+                    try {
+                        Debug.Log("Raw response: " + response.ToString());
+                        var settings = JsonDocument.Parse(response.ToString()).RootElement.EnumerateArray().First();
+                        string jsonData = settings.GetRawText();
+                        Debug.Log("Converted jsonData: " + jsonData);
+                        UnityMainThreadDispatcher.Instance.Enqueue(() => updateBotSettings(jsonData));
+                    }
+                    catch (Exception e) {
+                        Debug.LogError($"Error processing updateBotSettings response: {e.Message}\nStack trace: {e.StackTrace}");
+                    }
+                });
 
-                    Client.On("toTitleScreen", (response) =>
-                    {
-                        Debug.Log("Got toTitleScreen message.");
-                        UnityMainThreadDispatcher.Instance.Enqueue(() => OnToTitleScreen("{}"));
-                    });
-                #endif
+                Client.On("toTitleScreen", (response) =>
+                {
+                    Debug.Log("Got toTitleScreen message.");
+                    UnityMainThreadDispatcher.Instance.Enqueue(() => OnToTitleScreen("{}"));
+                });
 
                 Debug.Log("Attempting to connect...");
                 await Client.ConnectAsync();
@@ -110,6 +116,7 @@ namespace Footsies
             {
                 Debug.LogError($"Socket.IO Connection Error: {e.Message}\nStack trace: {e.StackTrace}");
             }
+#endif
         }
 
         public void EmitRoundResults(Dictionary<string, object> results)
@@ -117,6 +124,8 @@ namespace Footsies
 #if UNITY_WEBGL
             string json = JsonConvert.SerializeObject(results);
             EmitUnityEpisodeResults(json);
+#elif UNITY_STANDALONE_OSX
+            Debug.Log("SocketIO is disabled on Mac");
 #else
             if (Client == null)
             {
@@ -148,6 +157,8 @@ namespace Footsies
 #if UNITY_WEBGL
             string json = JsonConvert.SerializeObject(data);
             EmitUnityEpisodeStart(json);
+#elif UNITY_STANDALONE_OSX
+            Debug.Log("SocketIO is disabled on Mac");
 #else
             if (Client == null)
             {
@@ -223,7 +234,9 @@ namespace Footsies
 
         void OnDestroy()
         {
+#if !UNITY_WEBGL && !UNITY_STANDALONE_OSX
             Client?.DisconnectAsync();
+#endif
         }
     }
 }
