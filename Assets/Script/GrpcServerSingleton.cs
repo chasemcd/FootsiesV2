@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 #if !UNITY_WEBGL
 using Grpc.Core;
+using Grpc.Core.Interceptors;
 
 namespace Footsies
 {
