@@ -30,8 +30,8 @@ namespace Footsies
 
         private float battleAreaWidth = 10f;
 
-        private InputData p1Input;
-        private InputData p2Input;
+        private InputData p1Input = new InputData();
+        private InputData p2Input = new InputData();
 
         /// <summary>
         /// True if the current episode (round) just ended on the last Step() call.
