@@ -4,26 +4,53 @@ using UnityEditor.Callbacks;
 using System.IO;
 
 public class PostBuild
-    // Ensures that we have the correct .so file in the correct location after building the game
 {
     [PostProcessBuild(1)]
     public static void OnPostProcessBuild(BuildTarget target, string pathToBuiltProject)
     {
+        if (target != BuildTarget.StandaloneLinux64)
+            return;
 
+        // Derive the _Data folder from the executable name (e.g. footsies.x86_64 -> footsies_Data)
         string buildDir = Path.GetDirectoryName(pathToBuiltProject);
-        string managedDir = Path.Combine(buildDir, "footsies_Data", "Managed");
-        string pluginsDir = Path.Combine(buildDir, "footsies_Data", "Plugins");
-        string grpcLibSource = Path.Combine(pluginsDir, "libgrpc_csharp_ext.x64.so");
-        string grpcLibDestination = Path.Combine(managedDir, "libgrpc_csharp_ext.x64.so");
+        string exeName = Path.GetFileNameWithoutExtension(pathToBuiltProject);
+        string dataDir = Path.Combine(buildDir, exeName + "_Data");
 
-        if (File.Exists(grpcLibSource))
+        string pluginsDir = Path.Combine(dataDir, "Plugins");
+        string grpcLibSource = Path.Combine(pluginsDir, "libgrpc_csharp_ext.x64.so");
+
+        if (!File.Exists(grpcLibSource))
         {
-            File.Copy(grpcLibSource, grpcLibDestination, true);
-            Debug.Log("Copied libgrpc_csharp_ext.x64.so to " + grpcLibDestination);
+            Debug.LogWarning($"PostBuild: {grpcLibSource} not found, skipping gRPC native lib copy");
+            return;
         }
-        else
+
+        // Mono searches these locations for native libs at runtime
+        string[] destDirs = new[]
         {
-            Debug.LogError("libgrpc_csharp_ext.x64.so not found at " + grpcLibSource);
+            Path.Combine(dataDir, "Managed"),
+            Path.Combine(dataDir, "MonoBleedingEdge", "x86_64"),
+        };
+
+        // Mono tries multiple name variants when resolving "grpc_csharp_ext"
+        string[] destNames = new[]
+        {
+            "libgrpc_csharp_ext.x64.so",
+            "libgrpc_csharp_ext.so",
+            "grpc_csharp_ext",
+        };
+
+        foreach (string dir in destDirs)
+        {
+            if (!Directory.Exists(dir))
+                continue;
+
+            foreach (string name in destNames)
+            {
+                string dest = Path.Combine(dir, name);
+                File.Copy(grpcLibSource, dest, true);
+                Debug.Log($"PostBuild: Copied gRPC native lib to {dest}");
+            }
         }
     }
 }

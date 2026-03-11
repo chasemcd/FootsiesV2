@@ -24,7 +24,6 @@ namespace Footsies
         public Fighter fighter2 { get; private set; }
 
         private FighterData fighterData;
-        private AIEncoder encoder;
 
         public RoundStateType roundState { get; private set; }
         public int frameCount { get; private set; }
@@ -48,7 +47,6 @@ namespace Footsies
         public BattleSimulation(FighterData fighterData)
         {
             this.fighterData = fighterData;
-            encoder = new AIEncoder(0);
 
             fighter1 = new Fighter();
             fighter1.muteAudio = true;
@@ -71,8 +69,6 @@ namespace Footsies
             frameCount = -1;
             done = false;
             reward = 0;
-
-            encoder.resetObsHistory();
         }
 
         /// <summary>
@@ -160,22 +156,6 @@ namespace Footsies
                 RoundState = (long)roundState,
                 FrameCount = frameCount,
             };
-        }
-
-        public (float[], float[]) GetEncodedState()
-        {
-            return encoder.EncodeGameState(GetGameState());
-        }
-
-        /// <summary>
-        /// Encode state directly into pre-allocated arrays at the given offset.
-        /// Avoids allocations for batch operations.
-        /// </summary>
-        public void EncodeStateTo(float[] p1Buffer, float[] p2Buffer, int offset)
-        {
-            var (p1, p2) = encoder.EncodeGameState(GetGameState());
-            Array.Copy(p1, 0, p1Buffer, offset, p1.Length);
-            Array.Copy(p2, 0, p2Buffer, offset, p2.Length);
         }
 
         private int GetFrameAdvantage(bool getP1)

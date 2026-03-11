@@ -241,17 +241,10 @@ namespace Footsies
         {
             var response = new BatchEncodedState();
 
-            float[] p1Enc = envManager.GetP1Encodings();
-            float[] p2Enc = envManager.GetP2Encodings();
             long[] roundStates = envManager.GetRoundStates();
             bool[] dones = envManager.GetDones();
             int[] rewards = envManager.GetRewards();
 
-            // Add to protobuf repeated fields
-            for (int i = 0; i < p1Enc.Length; i++)
-                response.P1Encodings.Add(p1Enc[i]);
-            for (int i = 0; i < p2Enc.Length; i++)
-                response.P2Encodings.Add(p2Enc[i]);
             for (int i = 0; i < roundStates.Length; i++)
                 response.RoundStates.Add(roundStates[i]);
             for (int i = 0; i < dones.Length; i++)

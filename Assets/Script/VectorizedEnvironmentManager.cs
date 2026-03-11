@@ -12,11 +12,8 @@ namespace Footsies
     {
         private BattleSimulation[] environments;
         private int numEnvironments;
-        private int observationSize;
 
         // Pre-allocated output buffers to avoid per-call allocations
-        private float[] batchP1Encodings;
-        private float[] batchP2Encodings;
         private long[] batchRoundStates;
         private bool[] batchDones;
         private int[] batchRewards;
@@ -31,7 +28,6 @@ namespace Footsies
         public void Initialize(int n, FighterData fighterData)
         {
             numEnvironments = n;
-            observationSize = AIEncoder.ObservationSize;
 
             environments = new BattleSimulation[n];
             for (int i = 0; i < n; i++)
@@ -40,8 +36,6 @@ namespace Footsies
             }
 
             // Pre-allocate buffers
-            batchP1Encodings = new float[n * observationSize];
-            batchP2Encodings = new float[n * observationSize];
             batchRoundStates = new long[n];
             batchDones = new bool[n];
             batchRewards = new int[n];
@@ -58,12 +52,6 @@ namespace Footsies
             Parallel.For(0, numEnvironments, i =>
             {
                 environments[i].StepN(p1Actions[i], p2Actions[i], nFrames);
-            });
-
-            // Collect results into pre-allocated buffers
-            Parallel.For(0, numEnvironments, i =>
-            {
-                environments[i].EncodeStateTo(batchP1Encodings, batchP2Encodings, i * observationSize);
                 batchRoundStates[i] = (long)environments[i].roundState;
                 batchDones[i] = environments[i].done;
                 batchRewards[i] = environments[i].reward;
@@ -80,15 +68,6 @@ namespace Footsies
                 if (resetMask[i])
                 {
                     environments[i].Reset();
-                }
-            });
-
-            // Update encodings for reset environments
-            Parallel.For(0, numEnvironments, i =>
-            {
-                if (resetMask[i])
-                {
-                    environments[i].EncodeStateTo(batchP1Encodings, batchP2Encodings, i * observationSize);
                     batchRoundStates[i] = (long)environments[i].roundState;
                     batchDones[i] = false;
                     batchRewards[i] = 0;
@@ -104,7 +83,6 @@ namespace Footsies
             Parallel.For(0, numEnvironments, i =>
             {
                 environments[i].Reset();
-                environments[i].EncodeStateTo(batchP1Encodings, batchP2Encodings, i * observationSize);
                 batchRoundStates[i] = (long)environments[i].roundState;
                 batchDones[i] = false;
                 batchRewards[i] = 0;
@@ -112,8 +90,6 @@ namespace Footsies
         }
 
         // Accessors for pre-allocated buffers (no copies)
-        public float[] GetP1Encodings() => batchP1Encodings;
-        public float[] GetP2Encodings() => batchP2Encodings;
         public long[] GetRoundStates() => batchRoundStates;
         public bool[] GetDones() => batchDones;
         public int[] GetRewards() => batchRewards;
