@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(wsl find:*)",
-      "Bash(wsl bash:*)"
+      "Bash(wsl bash:*)",
+      "Bash(\"C:/Users/c/Desktop/footsies_windows_headless_ce88593/FOOTSIES.exe\" -batchmode --grpc --port 50051)"
     ]
   }
 }
