@@ -8,7 +8,7 @@ public class PostBuild
     [PostProcessBuild(1)]
     public static void OnPostProcessBuild(BuildTarget target, string pathToBuiltProject)
     {
-        if (target != BuildTarget.StandaloneLinux64)
+        if (target != BuildTarget.StandaloneLinux64 && target != BuildTarget.LinuxHeadlessSimulation)
             return;
 
         // Derive the _Data folder from the executable name (e.g. footsies.x86_64 -> footsies_Data)
