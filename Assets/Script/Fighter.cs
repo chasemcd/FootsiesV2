@@ -90,7 +90,7 @@ namespace Footsies
         public int currentActionID { get; private set; }
         public int currentActionFrame { get; private set; }
         public int currentActionFrameCount { get { return fighterData.actions[currentActionID].frameCount; } }
-        private bool isActionEnd { get { return (currentActionFrame >= fighterData.actions[currentActionID].frameCount); } }
+        public bool isActionEnd { get { return (currentActionFrame >= fighterData.actions[currentActionID].frameCount); } }
         public bool isAlwaysCancelable { get { return fighterData.actions[currentActionID].alwaysCancelable; } }
         
         public int currentActionHitCount{ get; private set; }
@@ -111,7 +111,7 @@ namespace Footsies
         private int reserveDamageActionID = -1;
 
         public int spriteShakePosition { get; private set; }
-        private int maxSpriteShakeFrame = 6;
+        public int maxSpriteShakeFrame { get; private set; } = 6;
 
         private bool hasWon = false;
 
@@ -593,7 +593,7 @@ namespace Footsies
             return true;
         }
 
-        private float GetSpecialAttackProgress()
+        public float GetSpecialAttackProgress()
         {
 
             // Count how many consecutive frames the attack has been held
@@ -664,7 +664,7 @@ namespace Footsies
         }
 
 
-        private bool WouldNextForwardInputDash()
+        public bool WouldNextForwardInputDash()
         {
             // Check if there was a recent forward input within the dash window
             for (int i = 0; i < fighterData.dashAllowFrame - 1; i++)
@@ -693,7 +693,7 @@ namespace Footsies
             return false;
         }
 
-        private bool WouldNextBackwardInputDash()
+        public bool WouldNextBackwardInputDash()
         {
             // Check if there was a recent backward input within the dash window
             for (int i = 0; i < fighterData.dashAllowFrame - 1; i++)
