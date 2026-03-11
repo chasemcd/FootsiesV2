@@ -30,7 +30,7 @@ namespace Footsies
         void StartServer()
         {
 
-            string host = "localhost";
+            string host = "0.0.0.0";
             int port = 50051;
 
             // Read CLI arguments

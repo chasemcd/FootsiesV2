@@ -45,10 +45,10 @@ namespace Footsies
         /// </summary>
         public int reward { get; private set; }
 
-        public BattleSimulation(FighterData fighterData, int observationDelay = 4)
+        public BattleSimulation(FighterData fighterData)
         {
             this.fighterData = fighterData;
-            encoder = new AIEncoder(observationDelay);
+            encoder = new AIEncoder(0);
 
             fighter1 = new Fighter();
             fighter1.muteAudio = true;

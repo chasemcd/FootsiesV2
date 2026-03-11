@@ -9,14 +9,13 @@ using Google.Protobuf.Reflection;
 
 /// <summary>
 /// Request to initialize N vectorized environments.
-/// Fields: num_environments (1, int64), observation_delay (2, int64)
+/// Fields: num_environments (1, int64)
 /// </summary>
 public sealed class InitEnvironmentsRequest : IMessage<InitEnvironmentsRequest>
 {
     public static MessageParser<InitEnvironmentsRequest> Parser { get; } = new MessageParser<InitEnvironmentsRequest>(() => new InitEnvironmentsRequest());
 
     public long NumEnvironments { get; set; }
-    public long ObservationDelay { get; set; } = 4;
 
     public MessageDescriptor Descriptor => null;
 
@@ -24,7 +23,6 @@ public sealed class InitEnvironmentsRequest : IMessage<InitEnvironmentsRequest>
     {
         if (other == null) return;
         NumEnvironments = other.NumEnvironments;
-        ObservationDelay = other.ObservationDelay;
     }
 
     public void MergeFrom(CodedInputStream input)
@@ -35,7 +33,6 @@ public sealed class InitEnvironmentsRequest : IMessage<InitEnvironmentsRequest>
             switch (tag)
             {
                 case 8: NumEnvironments = input.ReadInt64(); break;
-                case 16: ObservationDelay = input.ReadInt64(); break;
                 default: input.SkipLastField(); break;
             }
         }
@@ -44,23 +41,21 @@ public sealed class InitEnvironmentsRequest : IMessage<InitEnvironmentsRequest>
     public void WriteTo(CodedOutputStream output)
     {
         if (NumEnvironments != 0) { output.WriteTag(1, WireFormat.WireType.Varint); output.WriteInt64(NumEnvironments); }
-        if (ObservationDelay != 0) { output.WriteTag(2, WireFormat.WireType.Varint); output.WriteInt64(ObservationDelay); }
     }
 
     public int CalculateSize()
     {
         int size = 0;
         if (NumEnvironments != 0) size += 1 + CodedOutputStream.ComputeInt64Size(NumEnvironments);
-        if (ObservationDelay != 0) size += 1 + CodedOutputStream.ComputeInt64Size(ObservationDelay);
         return size;
     }
 
-    public InitEnvironmentsRequest Clone() => new InitEnvironmentsRequest { NumEnvironments = NumEnvironments, ObservationDelay = ObservationDelay };
+    public InitEnvironmentsRequest Clone() => new InitEnvironmentsRequest { NumEnvironments = NumEnvironments };
 
-    public bool Equals(InitEnvironmentsRequest other) => other != null && NumEnvironments == other.NumEnvironments && ObservationDelay == other.ObservationDelay;
+    public bool Equals(InitEnvironmentsRequest other) => other != null && NumEnvironments == other.NumEnvironments;
     public override bool Equals(object obj) => Equals(obj as InitEnvironmentsRequest);
-    public override int GetHashCode() => NumEnvironments.GetHashCode() ^ ObservationDelay.GetHashCode();
-    public override string ToString() => $"InitEnvironmentsRequest {{ NumEnvironments={NumEnvironments}, ObservationDelay={ObservationDelay} }}";
+    public override int GetHashCode() => NumEnvironments.GetHashCode();
+    public override string ToString() => $"InitEnvironmentsRequest {{ NumEnvironments={NumEnvironments} }}";
 }
 
 /// <summary>

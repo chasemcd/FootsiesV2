@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 #endif
 using UnityEngine;
 using System.Collections.Generic;
-#if !UNITY_WEBGL && !UNITY_STANDALONE_OSX
+#if !UNITY_WEBGL && !UNITY_STANDALONE
 using SocketIOClient;
 #endif
 using Newtonsoft.Json;
@@ -16,7 +16,7 @@ namespace Footsies
     public class SocketIOManager : MonoBehaviour
     {
         public static SocketIOManager Instance { get; private set; }
-#if !UNITY_WEBGL && !UNITY_STANDALONE_OSX
+#if !UNITY_WEBGL && !UNITY_STANDALONE
         public SocketIOClient.SocketIO Client { get; private set; }
 #endif
 
@@ -49,8 +49,8 @@ namespace Footsies
 
         public async void InitializeSocket()
         {
-#if UNITY_STANDALONE_OSX
-            Debug.Log("SocketIO is disabled on Mac");
+#if UNITY_STANDALONE
+            Debug.Log("SocketIO is disabled on standalone builds");
             return;
 #elif UNITY_WEBGL
             SetupUnitySocketListeners();
@@ -124,8 +124,8 @@ namespace Footsies
 #if UNITY_WEBGL
             string json = JsonConvert.SerializeObject(results);
             EmitUnityEpisodeResults(json);
-#elif UNITY_STANDALONE_OSX
-            Debug.Log("SocketIO is disabled on Mac");
+#elif UNITY_STANDALONE
+            Debug.Log("SocketIO is disabled on standalone builds");
 #else
             if (Client == null)
             {
@@ -157,8 +157,8 @@ namespace Footsies
 #if UNITY_WEBGL
             string json = JsonConvert.SerializeObject(data);
             EmitUnityEpisodeStart(json);
-#elif UNITY_STANDALONE_OSX
-            Debug.Log("SocketIO is disabled on Mac");
+#elif UNITY_STANDALONE
+            Debug.Log("SocketIO is disabled on standalone builds");
 #else
             if (Client == null)
             {
@@ -234,7 +234,7 @@ namespace Footsies
 
         void OnDestroy()
         {
-#if !UNITY_WEBGL && !UNITY_STANDALONE_OSX
+#if !UNITY_WEBGL && !UNITY_STANDALONE
             Client?.DisconnectAsync();
 #endif
         }

@@ -28,8 +28,7 @@ namespace Footsies
         /// </summary>
         /// <param name="n">Number of environments</param>
         /// <param name="fighterData">Shared fighter data (read-only after setup)</param>
-        /// <param name="observationDelay">Observation delay frames for encoder</param>
-        public void Initialize(int n, FighterData fighterData, int observationDelay = 4)
+        public void Initialize(int n, FighterData fighterData)
         {
             numEnvironments = n;
             observationSize = AIEncoder.ObservationSize;
@@ -37,7 +36,7 @@ namespace Footsies
             environments = new BattleSimulation[n];
             for (int i = 0; i < n; i++)
             {
-                environments[i] = new BattleSimulation(fighterData, observationDelay);
+                environments[i] = new BattleSimulation(fighterData);
             }
 
             // Pre-allocate buffers

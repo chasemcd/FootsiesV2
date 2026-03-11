@@ -12,7 +12,7 @@ namespace Footsies
     /// Runs N independent BattleSimulations in parallel for high-throughput RL training.
     ///
     /// Usage from Python client:
-    ///   1. Call InitEnvironments(n=1000, observation_delay=4)
+    ///   1. Call InitEnvironments(n=1000)
     ///   2. Call BatchStep(p1_actions=[...], p2_actions=[...], n_frames=4) repeatedly
     ///   3. On done environments, call BatchReset(reset_mask=[true, false, ...])
     ///
@@ -102,7 +102,6 @@ namespace Footsies
             try
             {
                 int numEnvs = (int)request.NumEnvironments;
-                int obsDelay = (int)request.ObservationDelay;
 
                 // We need to access FighterData from the main thread (ScriptableObject)
                 var tcs = new TaskCompletionSource<Empty>();
@@ -123,9 +122,9 @@ namespace Footsies
                         var fighterData = battleCore.fighterDataList[0];
 
                         envManager = new VectorizedEnvironmentManager();
-                        envManager.Initialize(numEnvs, fighterData, obsDelay);
+                        envManager.Initialize(numEnvs, fighterData);
 
-                        Debug.Log($"Vectorized environments initialized: {numEnvs} envs, obsDelay={obsDelay}");
+                        Debug.Log($"Vectorized environments initialized: {numEnvs} envs");
                         tcs.SetResult(new Empty());
                     }
                     catch (Exception ex)
