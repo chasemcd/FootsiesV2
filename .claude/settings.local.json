@@ -4,7 +4,8 @@
       "Bash(wsl find:*)",
       "Bash(wsl bash:*)",
       "Bash(\"C:/Users/c/Desktop/footsies_windows_headless_ce88593/FOOTSIES.exe\" -batchmode --grpc --port 50051)",
-      "Bash(ldd /home/c/footsies_linux_headless_250928c/footsies_Data/MonoBleedingEdge/x86_64/libmonobdwgc-2.0.so 2>&1)"
+      "Bash(ldd /home/c/footsies_linux_headless_250928c/footsies_Data/MonoBleedingEdge/x86_64/libmonobdwgc-2.0.so 2>&1)",
+      "Bash(find ~ -path \"*FootsiesGym*proto*\" -type f 2>/dev/null | head -20)"
     ]
   }
 }

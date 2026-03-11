@@ -241,16 +241,67 @@ namespace Footsies
         {
             var response = new BatchEncodedState();
 
+            int n = envManager.NumEnvironments;
             long[] roundStates = envManager.GetRoundStates();
             bool[] dones = envManager.GetDones();
             int[] rewards = envManager.GetRewards();
 
-            for (int i = 0; i < roundStates.Length; i++)
+            for (int i = 0; i < n; i++)
+            {
+                // Common fields
                 response.RoundStates.Add(roundStates[i]);
-            for (int i = 0; i < dones.Length; i++)
                 response.Dones.Add(dones[i]);
-            for (int i = 0; i < rewards.Length; i++)
                 response.Rewards.Add(rewards[i]);
+
+                var env = envManager.GetEnvironment(i);
+                response.FrameCounts.Add(env.frameCount);
+
+                // P1 state
+                var f1 = env.fighter1;
+                response.P1PositionX.Add(f1.position.x);
+                response.P1IsDead.Add(f1.isDead);
+                response.P1VitalHealth.Add(f1.vitalHealth);
+                response.P1GuardHealth.Add(f1.guardHealth);
+                response.P1CurrentActionId.Add(f1.currentActionID);
+                response.P1CurrentActionFrame.Add(f1.currentActionFrame);
+                response.P1CurrentActionFrameCount.Add(f1.currentActionFrameCount);
+                response.P1IsActionEnd.Add(f1.isActionEnd);
+                response.P1IsAlwaysCancelable.Add(f1.isAlwaysCancelable);
+                response.P1CurrentActionHitCount.Add(f1.currentActionHitCount);
+                response.P1CurrentHitStunFrame.Add(f1.currentHitStunFrame);
+                response.P1IsInHitStun.Add(f1.isInHitStun);
+                response.P1SpriteShakePosition.Add(f1.spriteShakePosition);
+                response.P1MaxSpriteShakeFrame.Add(f1.maxSpriteShakeFrame);
+                response.P1VelocityX.Add(f1.velocity_x);
+                response.P1IsFaceRight.Add(f1.isFaceRight);
+                response.P1CurrentFrameAdvantage.Add(f1.currentFrameAdvantage);
+                response.P1WouldNextForwardInputDash.Add(f1.WouldNextForwardInputDash());
+                response.P1WouldNextBackwardInputDash.Add(f1.WouldNextBackwardInputDash());
+                response.P1SpecialAttackProgress.Add(f1.GetSpecialAttackProgress());
+
+                // P2 state
+                var f2 = env.fighter2;
+                response.P2PositionX.Add(f2.position.x);
+                response.P2IsDead.Add(f2.isDead);
+                response.P2VitalHealth.Add(f2.vitalHealth);
+                response.P2GuardHealth.Add(f2.guardHealth);
+                response.P2CurrentActionId.Add(f2.currentActionID);
+                response.P2CurrentActionFrame.Add(f2.currentActionFrame);
+                response.P2CurrentActionFrameCount.Add(f2.currentActionFrameCount);
+                response.P2IsActionEnd.Add(f2.isActionEnd);
+                response.P2IsAlwaysCancelable.Add(f2.isAlwaysCancelable);
+                response.P2CurrentActionHitCount.Add(f2.currentActionHitCount);
+                response.P2CurrentHitStunFrame.Add(f2.currentHitStunFrame);
+                response.P2IsInHitStun.Add(f2.isInHitStun);
+                response.P2SpriteShakePosition.Add(f2.spriteShakePosition);
+                response.P2MaxSpriteShakeFrame.Add(f2.maxSpriteShakeFrame);
+                response.P2VelocityX.Add(f2.velocity_x);
+                response.P2IsFaceRight.Add(f2.isFaceRight);
+                response.P2CurrentFrameAdvantage.Add(f2.currentFrameAdvantage);
+                response.P2WouldNextForwardInputDash.Add(f2.WouldNextForwardInputDash());
+                response.P2WouldNextBackwardInputDash.Add(f2.WouldNextBackwardInputDash());
+                response.P2SpecialAttackProgress.Add(f2.GetSpecialAttackProgress());
+            }
 
             return response;
         }
