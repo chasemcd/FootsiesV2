@@ -28,7 +28,17 @@ namespace Footsies
             Debug.Log("GameManager Awake() called");
             DontDestroyOnLoad(this.gameObject);
 
-            Application.targetFrameRate = 60;
+            // In headless/batchmode, uncap frame rate for maximum simulation speed
+            if (Application.isBatchMode)
+            {
+                Application.targetFrameRate = -1;
+                QualitySettings.vSyncCount = 0;
+                Debug.Log("Headless mode: frame rate uncapped");
+            }
+            else
+            {
+                Application.targetFrameRate = 60;
+            }
         }
 
         private void Start()

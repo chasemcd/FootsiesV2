@@ -37,7 +37,7 @@ namespace Footsies
         private GameObject roundUI;
 
         [SerializeField]
-        private List<FighterData> fighterDataList = new List<FighterData>();
+        public List<FighterData> fighterDataList = new List<FighterData>();
 
         public bool debugP1Attack = false;
         public bool debugP2Attack = false;
@@ -102,6 +102,12 @@ namespace Footsies
 
         public bool IsUsingGrpcController => useGrpcController;
 
+        /// <summary>
+        /// True when running in headless/batchmode (no rendering, max speed training).
+        /// Distinct from gRPC mode which can also run windowed with rendering.
+        /// </summary>
+        public bool isHeadless { get; private set; }
+
         private List<ActionLog> player1Actions = new List<ActionLog>();
         private List<ActionLog> player2Actions = new List<ActionLog>();
 
@@ -155,12 +161,20 @@ namespace Footsies
         void Awake()
         {
             ParseCommandLineArgs();
+            isHeadless = Application.isBatchMode;
 
             // Setup dictionary from ScriptableObject data
             fighterDataList.ForEach((data) => data.setupDictionary());
 
             fighter1 = new Fighter();
             fighter2 = new Fighter();
+
+            // Mute audio in headless mode
+            if (isHeadless)
+            {
+                fighter1.muteAudio = true;
+                fighter2.muteAudio = true;
+            }
 
             _fighters.Add(fighter1);
             _fighters.Add(fighter2);
@@ -221,32 +235,39 @@ namespace Footsies
 
                     UpdateIntroState();
 
-                    timer -= Time.deltaTime;
-                    if (timer <= 0f)
+                    // In headless mode, skip intro timer entirely for instant transitions
+                    if (isHeadless)
                     {
-                    ChangeRoundState(RoundStateType.Fight);
+                        ChangeRoundState(RoundStateType.Fight);
                     }
-
-                    if (debugPlayLastRoundInput
-                        && !isReplayingLastRoundInput)
+                    else
                     {
-                        StartPlayLastRoundInput();
+                        timer -= Time.deltaTime;
+                        if (timer <= 0f)
+                        {
+                            ChangeRoundState(RoundStateType.Fight);
+                        }
+
+                        if (debugPlayLastRoundInput
+                            && !isReplayingLastRoundInput)
+                        {
+                            StartPlayLastRoundInput();
+                        }
                     }
 
                     break;
                 case RoundStateType.Fight:
 
-                    if(CheckUpdateDebugPause())
+                    if(!useGrpcController && CheckUpdateDebugPause())
                     {
                         break;
                     }
 
                     frameCount++;
-                    
+
                     UpdateFightState();
 
-                    var deadFighter = _fighters.Find((f) => f.isDead);
-                    if(deadFighter != null)
+                    if (fighter1.isDead || fighter2.isDead)
                     {
                         ChangeRoundState(RoundStateType.KO);
                     }
@@ -255,21 +276,37 @@ namespace Footsies
                 case RoundStateType.KO:
 
                     UpdateKOState();
-                    timer -= Time.deltaTime;
-                    if (timer <= 0f)
+                    // In headless mode, skip KO timer entirely
+                    if (isHeadless)
                     {
                         ChangeRoundState(RoundStateType.End);
+                    }
+                    else
+                    {
+                        timer -= Time.deltaTime;
+                        if (timer <= 0f)
+                        {
+                            ChangeRoundState(RoundStateType.End);
+                        }
                     }
 
                     break;
                 case RoundStateType.End:
 
                     UpdateEndState();
-                    timer -= Time.deltaTime;
-                    if (timer <= 0f
-                        || (timer <= endStateSkippableTime && IsKOSkipButtonPressed()))
+                    // In headless mode, skip End timer entirely
+                    if (isHeadless)
                     {
                         ChangeRoundState(RoundStateType.Stop);
+                    }
+                    else
+                    {
+                        timer -= Time.deltaTime;
+                        if (timer <= 0f
+                            || (timer <= endStateSkippableTime && IsKOSkipButtonPressed()))
+                        {
+                            ChangeRoundState(RoundStateType.Stop);
+                        }
                     }
 
                     break;
@@ -319,7 +356,8 @@ namespace Footsies
 
                     timer = introStateTime;
 
-                    roundUIAnimator.SetTrigger("RoundStart");
+                    if (!isHeadless && roundUIAnimator != null)
+                        roundUIAnimator.SetTrigger("RoundStart");
 
                     if (GameManager.Instance.isVsCPU && barracudaAI == null)
                     {
@@ -370,7 +408,8 @@ namespace Footsies
                     //     barracudaAI.SaveGameLog();
                     // }
 
-                    roundUIAnimator.SetTrigger("RoundEnd");
+                    if (!isHeadless && roundUIAnimator != null)
+                        roundUIAnimator.SetTrigger("RoundEnd");
 
                     break;
                 case RoundStateType.End:
@@ -395,8 +434,11 @@ namespace Footsies
 
                     // Clean up at the end of each round
                     ClearRoundLogs();
-                    GC.Collect();
-                    Resources.UnloadUnusedAssets();
+                    if (!isHeadless)
+                    {
+                        GC.Collect();
+                        Resources.UnloadUnusedAssets();
+                    }
                     
                     break;
             }

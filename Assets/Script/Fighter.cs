@@ -70,6 +70,9 @@ namespace Footsies
     
     public class Fighter
     {
+        // Fixed timestep for deterministic simulation (1/60th of a second)
+        public const float FIXED_DELTA_TIME = 1.0f / 60.0f;
+
         public Vector2 position;
         public float velocity_x;
         public bool isFaceRight;
@@ -295,15 +298,16 @@ namespace Footsies
                 return;
 
             // Position changes from walking forward and backward
+            // Use fixed timestep for deterministic simulation
             var sign = isFaceRight ? 1 : -1;
             if (currentActionID == (int)CommonActionID.FORWARD)
             {
-                position.x += fighterData.forwardMoveSpeed * sign * Time.deltaTime;
+                position.x += fighterData.forwardMoveSpeed * sign * FIXED_DELTA_TIME;
                 return;
             }
             else if (currentActionID == (int)CommonActionID.BACKWARD)
             {
-                position.x -= fighterData.backwardMoveSpeed * sign * Time.deltaTime;
+                position.x -= fighterData.backwardMoveSpeed * sign * FIXED_DELTA_TIME;
                 return;
             }
 
@@ -314,7 +318,7 @@ namespace Footsies
                 velocity_x = movementData.velocity_x;
                 if (velocity_x != 0)
                 {
-                    position.x += velocity_x * sign * Time.deltaTime;
+                    position.x += velocity_x * sign * FIXED_DELTA_TIME;
                 }
             }
         }
@@ -375,7 +379,8 @@ namespace Footsies
                 {
                     SetCurrentAction(attackData.guardActionID);
                     reserveDamageActionID = (int)CommonActionID.GUARD_BREAK;
-                    SoundManager.Instance.playFighterSE(fighterData.actions[reserveDamageActionID].audioClip, isFaceRight, position.x);
+                    if (!muteAudio)
+                        SoundManager.Instance.playFighterSE(fighterData.actions[reserveDamageActionID].audioClip, isFaceRight, position.x);
                     return DamageResult.GuardBreak;
                 }
                 else
@@ -544,6 +549,11 @@ namespace Footsies
         /// </summary>
         /// <param name="actionID"></param>
         /// <param name="startFrame"></param>
+        /// <summary>
+        /// When true, skips audio playback (for headless/training mode)
+        /// </summary>
+        public bool muteAudio { get; set; }
+
         private void SetCurrentAction(int actionID, int startFrame = 0)
         {
             currentActionID = actionID;
@@ -554,7 +564,7 @@ namespace Footsies
             reserveDamageActionID = -1;
             spriteShakePosition = 0;
 
-            if(fighterData.actions[currentActionID].audioClip != null)
+            if(!muteAudio && fighterData.actions[currentActionID].audioClip != null)
             {
                 if (currentActionID == (int)CommonActionID.GUARD_BREAK)
                     return;

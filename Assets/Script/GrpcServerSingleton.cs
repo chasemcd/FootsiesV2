@@ -52,7 +52,10 @@ namespace Footsies
             
             server = new Server
             {
-                Services = { FootsiesGameService.BindService(new FootsiesGameServiceImpl()) },
+                Services = {
+                    FootsiesGameService.BindService(new FootsiesGameServiceImpl()),
+                    VectorizedGrpcService.BindService(new VectorizedGrpcService())
+                },
                 Ports = { new ServerPort(host, port, ServerCredentials.Insecure) }
             };
             server.Start();
@@ -85,6 +88,7 @@ namespace Footsies
     {
         private BattleCore battleCore;
         private BattleGUI battleGUI;
+        private bool isHeadless = Application.isBatchMode;
 
         public override Task<Empty> StartGame(Empty request, ServerCallContext context)
         {
@@ -173,7 +177,6 @@ namespace Footsies
         {
             try
             {
-                // Debug.Log($"StepNFrames called with p1_action: {request.P1Action}, p2_action: {request.P2Action}, nFrames: {request.NFrames}");
                 var taskCompletionSource = new TaskCompletionSource<GameState>();
 
                 EnqueueToMainThread(() =>
@@ -181,35 +184,31 @@ namespace Footsies
                     if (battleCore == null)
                     {
                         battleCore = GameObject.FindObjectOfType<BattleCore>();
-                        
+
                         if (battleCore == null)
                         {
                             Debug.LogError("BattleCore not found during StepNFrames.");
-                            taskCompletionSource.SetResult(new GameState()); // Return an empty state or handle the error as needed
+                            taskCompletionSource.SetResult(new GameState());
                             return;
                         }
                     }
 
-                    if (battleGUI == null)
+                    // In windowed mode, find BattleGUI for rendering
+                    if (!isHeadless && battleGUI == null)
                     {
                         battleGUI = GameObject.FindObjectOfType<BattleGUI>();
-                        if (battleGUI == null)
-                        {
-                            Debug.LogError("BattleGUI not found during StepNFrames.");
-                            taskCompletionSource.SetResult(new GameState()); // Return an empty state or handle the error as needed
-                            return;
-                        }
                     }
 
                     // Set the input for the N frames
                     battleCore.SetP1InputData((int)request.P1Action);
                     battleCore.SetP2InputData((int)request.P2Action);
 
-                    // Advance the frames
+                    // Advance the frames (skip BattleGUI in headless for max speed)
                     for (int i = 0; i < (int)request.NFrames; i++)
                     {
                         battleCore.ManualFixedUpdate();
-                        battleGUI.ManualFixedUpdate();
+                        if (!isHeadless && battleGUI != null)
+                            battleGUI.ManualFixedUpdate();
                     }
 
                     // Clear the input so we have to set it at the next call
@@ -220,7 +219,6 @@ namespace Footsies
                     taskCompletionSource.SetResult(gameState);
                 });
 
-                // LogGameState(taskCompletionSource.Task.Result);
                 return taskCompletionSource.Task;
             }
             catch (Exception ex)
