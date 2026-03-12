@@ -68,6 +68,11 @@ namespace Footsies
                 msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
                 data => BatchEncodedState.Parser.ParseFrom(data));
 
+        private static readonly Marshaller<GetBatchEncodedStateInput> GetBatchEncodedStateInputMarshaller =
+            Marshallers.Create(
+                msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
+                data => GetBatchEncodedStateInput.Parser.ParseFrom(data));
+
         private static readonly Marshaller<Empty> EmptyMarshaller =
             Marshallers.Create(
                 msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
@@ -121,6 +126,17 @@ namespace Footsies
                 MethodType.Unary, ServiceName, "BatchResetAllEncoded",
                 BatchResetAllEncodedInputMarshaller, BatchEncodedStateMarshaller);
 
+        // State getter endpoints
+        private static readonly Method<Empty, BatchRawState> GetBatchRawStateMethod =
+            new Method<Empty, BatchRawState>(
+                MethodType.Unary, ServiceName, "GetBatchRawState",
+                EmptyMarshaller, BatchRawStateMarshaller);
+
+        private static readonly Method<GetBatchEncodedStateInput, BatchEncodedState> GetBatchEncodedStateMethod =
+            new Method<GetBatchEncodedStateInput, BatchEncodedState>(
+                MethodType.Unary, ServiceName, "GetBatchEncodedState",
+                GetBatchEncodedStateInputMarshaller, BatchEncodedStateMarshaller);
+
         private static readonly Method<Empty, BoolValue> IsVecReadyMethod =
             new Method<Empty, BoolValue>(
                 MethodType.Unary, ServiceName, "IsVecReady",
@@ -141,6 +157,9 @@ namespace Footsies
                 .AddMethod(BatchStepEncodedMethod, impl.HandleBatchStepEncoded)
                 .AddMethod(BatchResetEncodedMethod, impl.HandleBatchResetEncoded)
                 .AddMethod(BatchResetAllEncodedMethod, impl.HandleBatchResetAllEncoded)
+                // State getter endpoints
+                .AddMethod(GetBatchRawStateMethod, impl.HandleGetBatchRawState)
+                .AddMethod(GetBatchEncodedStateMethod, impl.HandleGetBatchEncodedState)
                 .AddMethod(IsVecReadyMethod, impl.HandleIsVecReady)
                 .Build();
         }
@@ -352,6 +371,62 @@ namespace Footsies
             catch (Exception ex)
             {
                 Debug.LogError($"BatchResetAllEncoded exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+        }
+
+        // =====================================================================
+        // State getter endpoints
+        // =====================================================================
+
+        private Task<BatchRawState> HandleGetBatchRawState(Empty request, ServerCallContext context)
+        {
+            try
+            {
+                EnsureInitialized();
+                return Task.FromResult(BuildRawBatchResponse());
+            }
+            catch (RpcException) { throw; }
+            catch (Exception ex)
+            {
+                Debug.LogError($"GetBatchRawState exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+        }
+
+        private Task<BatchEncodedState> HandleGetBatchEncodedState(GetBatchEncodedStateInput request, ServerCallContext context)
+        {
+            try
+            {
+                EnsureInitialized();
+
+                int n = envManager.NumEnvironments;
+                int numActions = (int)request.NumActions;
+
+                int[] prevP1Actions = new int[n];
+                int[] prevP2Actions = new int[n];
+                bool[] p1HoldingSpecial = new bool[n];
+                bool[] p2HoldingSpecial = new bool[n];
+
+                for (int i = 0; i < n; i++)
+                {
+                    prevP1Actions[i] = (int)request.PrevP1Actions[i];
+                    prevP2Actions[i] = (int)request.PrevP2Actions[i];
+                    p1HoldingSpecial[i] = request.P1HoldingSpecial[i];
+                    p2HoldingSpecial[i] = request.P2HoldingSpecial[i];
+                }
+
+                envManager.EncodeCurrentState(
+                    prevP1Actions, prevP2Actions,
+                    p1HoldingSpecial, p2HoldingSpecial,
+                    numActions);
+
+                return Task.FromResult(BuildEncodedBatchResponse());
+            }
+            catch (RpcException) { throw; }
+            catch (Exception ex)
+            {
+                Debug.LogError($"GetBatchEncodedState exception: {ex}");
                 throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
             }
         }

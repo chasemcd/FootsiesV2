@@ -800,3 +800,85 @@ public sealed class BatchResetAllEncodedInput : IMessage<BatchResetAllEncodedInp
     public override int GetHashCode() => NumActions.GetHashCode();
     public override string ToString() => $"BatchResetAllEncodedInput {{ NumActions={NumActions} }}";
 }
+
+/// <summary>
+/// Request to encode the current state of all environments without stepping.
+/// Provides Python-side encoding context (prev actions, special charge state).
+///
+/// Field layout:
+///   1: prev_p1_actions (repeated int64)    2: prev_p2_actions (repeated int64)
+///   3: p1_holding_special (repeated bool)  4: p2_holding_special (repeated bool)
+///   5: num_actions (int64)
+/// </summary>
+public sealed class GetBatchEncodedStateInput : IMessage<GetBatchEncodedStateInput>
+{
+    public static MessageParser<GetBatchEncodedStateInput> Parser { get; } = new MessageParser<GetBatchEncodedStateInput>(() => new GetBatchEncodedStateInput());
+
+    public RepeatedField<long> PrevP1Actions { get; } = new RepeatedField<long>();       // field 1
+    public RepeatedField<long> PrevP2Actions { get; } = new RepeatedField<long>();       // field 2
+    public RepeatedField<bool> P1HoldingSpecial { get; } = new RepeatedField<bool>();    // field 3
+    public RepeatedField<bool> P2HoldingSpecial { get; } = new RepeatedField<bool>();    // field 4
+    public long NumActions { get; set; }                                                  // field 5
+
+    public MessageDescriptor Descriptor => null;
+
+    public void MergeFrom(GetBatchEncodedStateInput other)
+    {
+        if (other == null) return;
+        PrevP1Actions.Add(other.PrevP1Actions);
+        PrevP2Actions.Add(other.PrevP2Actions);
+        P1HoldingSpecial.Add(other.P1HoldingSpecial);
+        P2HoldingSpecial.Add(other.P2HoldingSpecial);
+        NumActions = other.NumActions;
+    }
+
+    public void MergeFrom(CodedInputStream input)
+    {
+        uint tag;
+        while ((tag = input.ReadTag()) != 0)
+        {
+            switch (tag)
+            {
+                case 10: case 8:  PrevP1Actions.AddEntriesFrom(input, FieldCodec.ForInt64(10)); break;
+                case 18: case 16: PrevP2Actions.AddEntriesFrom(input, FieldCodec.ForInt64(18)); break;
+                case 26: case 24: P1HoldingSpecial.AddEntriesFrom(input, FieldCodec.ForBool(26)); break;
+                case 34: case 32: P2HoldingSpecial.AddEntriesFrom(input, FieldCodec.ForBool(34)); break;
+                case 40: NumActions = input.ReadInt64(); break;
+                default: input.SkipLastField(); break;
+            }
+        }
+    }
+
+    public void WriteTo(CodedOutputStream output)
+    {
+        PrevP1Actions.WriteTo(output, FieldCodec.ForInt64(10));
+        PrevP2Actions.WriteTo(output, FieldCodec.ForInt64(18));
+        P1HoldingSpecial.WriteTo(output, FieldCodec.ForBool(26));
+        P2HoldingSpecial.WriteTo(output, FieldCodec.ForBool(34));
+        if (NumActions != 0) { output.WriteTag(5, WireFormat.WireType.Varint); output.WriteInt64(NumActions); }
+    }
+
+    public int CalculateSize()
+    {
+        int size = 0;
+        size += PrevP1Actions.CalculateSize(FieldCodec.ForInt64(10));
+        size += PrevP2Actions.CalculateSize(FieldCodec.ForInt64(18));
+        size += P1HoldingSpecial.CalculateSize(FieldCodec.ForBool(26));
+        size += P2HoldingSpecial.CalculateSize(FieldCodec.ForBool(34));
+        if (NumActions != 0) size += 1 + CodedOutputStream.ComputeInt64Size(NumActions);
+        return size;
+    }
+
+    public GetBatchEncodedStateInput Clone()
+    {
+        var clone = new GetBatchEncodedStateInput { NumActions = NumActions };
+        clone.PrevP1Actions.Add(PrevP1Actions); clone.PrevP2Actions.Add(PrevP2Actions);
+        clone.P1HoldingSpecial.Add(P1HoldingSpecial); clone.P2HoldingSpecial.Add(P2HoldingSpecial);
+        return clone;
+    }
+
+    public bool Equals(GetBatchEncodedStateInput other) => other != null;
+    public override bool Equals(object obj) => Equals(obj as GetBatchEncodedStateInput);
+    public override int GetHashCode() => PrevP1Actions.GetHashCode();
+    public override string ToString() => $"GetBatchEncodedStateInput {{ envs={PrevP1Actions.Count} }}";
+}

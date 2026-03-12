@@ -215,6 +215,38 @@ namespace Footsies
             });
         }
 
+        /// <summary>
+        /// Encode the current state of all environments without stepping.
+        /// Used to get encoded observations after a raw step, or to re-encode
+        /// with different encoding context.
+        /// </summary>
+        public void EncodeCurrentState(
+            int[] prevP1Actions, int[] prevP2Actions,
+            bool[] p1HoldingSpecial, bool[] p2HoldingSpecial,
+            int numActions)
+        {
+            EnsureEncodingBuffers(numActions);
+            int obsSize = encodingObsSize;
+
+            Parallel.For(0, numEnvironments, i =>
+            {
+                var f1 = environments[i].fighter1;
+                var f2 = environments[i].fighter2;
+
+                VectorizedEncoder.EncodeP1Centric(
+                    f1, f2,
+                    prevP1Actions[i], prevP2Actions[i],
+                    p1HoldingSpecial[i], p2HoldingSpecial[i],
+                    numActions, p1Encodings, i * obsSize);
+
+                VectorizedEncoder.EncodeP2Centric(
+                    f1, f2,
+                    prevP1Actions[i], prevP2Actions[i],
+                    p1HoldingSpecial[i], p2HoldingSpecial[i],
+                    numActions, p2Encodings, i * obsSize);
+            });
+        }
+
         // Accessors for pre-allocated buffers (no copies)
         public long[] GetRoundStates() => batchRoundStates;
         public bool[] GetDones() => batchDones;
