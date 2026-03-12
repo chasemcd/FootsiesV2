@@ -35,78 +35,27 @@ namespace Footsies
 
         public static int ObservationSize => 81; // Kept for compatibility
 
-        private readonly Queue<float[]>[] _encodingHistory;
-        private int _observationDelay;
-
-        public AIEncoder(int observationDelay = 16)
+        public AIEncoder()
         {
-            _observationDelay = observationDelay;
-            _encodingHistory = new Queue<float[]>[] { 
-                new Queue<float[]>(), // Player 1 history
-                new Queue<float[]>()  // Player 2 history
-            };
-        }
-
-        public void resetObsHistory()
-        {
-            _encodingHistory[0].Clear();
-            _encodingHistory[1].Clear();
-        }
-
-        public void setObservationDelay(int observationDelay)
-        {
-            _observationDelay = observationDelay;
         }
 
         public (float[] player1Encoding, float[] player2Encoding) EncodeGameState(GameState gameState)
         {
-
-            // Encode current states
             var commonState = EncodeCommonState(gameState).ToArray();
             var p1Features = EncodePlayerState(gameState.Player1, gameState.FrameCount).ToArray();
             var p2Features = EncodePlayerState(gameState.Player2, gameState.FrameCount).ToArray();
 
-            // Get delayed opponent state first
-            float[] delayedP1Features = p1Features;
-            float[] delayedP2Features = p2Features;
-            
-            // TODO(chase): This is a bug that's currently also present in the Python code.
-            // Instead of setting to 0 if we don't have enough history, we should set it to 
-            // be the oldest available state in history. 
-            int effectiveDelay = (_encodingHistory[0].Count < _observationDelay) ? 0 : _observationDelay;
-            
-            if (effectiveDelay > 0)
-            {
-                int retrievalIndex = _encodingHistory[0].Count - _observationDelay;
-                // Debug.Log($"Retrieving observation at index {retrievalIndex} from history of size {_encodingHistory[0].Count} with delay {_observationDelay}");
-                delayedP1Features = _encodingHistory[0].ElementAt(retrievalIndex);
-                delayedP2Features = _encodingHistory[1].ElementAt(retrievalIndex);
-            } 
-            // else {
-            //     Debug.Log($"No delay, using current state for both players {_encodingHistory[0].Count}");
-            // }
-
-            // Store current encodings in history
-            _encodingHistory[0].Enqueue(p1Features);
-            _encodingHistory[1].Enqueue(p2Features);
-
-            // Maintain history length
-            while (_encodingHistory[0].Count > _observationDelay)
-            {
-                _encodingHistory[0].Dequeue();
-                _encodingHistory[1].Dequeue();
-            }
-
-            // Create encodings for both players
+            // P1-centric: [common, p1, p2]
             var p1Encoding = new List<float>();
             p1Encoding.AddRange(commonState);
-            p1Encoding.AddRange(p1Features);       // Current P1 state (undelayed)
-            p1Encoding.AddRange(delayedP2Features);// P2 state (delayed)
+            p1Encoding.AddRange(p1Features);
+            p1Encoding.AddRange(p2Features);
 
+            // P2-centric: [common, p2, p1]
             var p2Encoding = new List<float>();
             p2Encoding.AddRange(commonState);
-            p2Encoding.AddRange(p2Features);       // Current P2 state (undelayed)
-            p2Encoding.AddRange(delayedP1Features);// P1 state (delayed)
+            p2Encoding.AddRange(p2Features);
+            p2Encoding.AddRange(p1Features);
 
             return (p1Encoding.ToArray(), p2Encoding.ToArray());
         }
@@ -114,8 +63,6 @@ namespace Footsies
         private IEnumerable<float> EncodePlayerState(PlayerState playerState, long frameCount)
         {
             var features = new List<float>();
-
-            // features.Add(frameCount);
 
             // Position and velocity
             features.Add(playerState.PlayerPositionX / POSITION_SCALE);
@@ -135,7 +82,7 @@ namespace Footsies
             int actionIdCount = System.Enum.GetValues(typeof(CommonActionID)).Length;
             for (ulong i = 0; i < (ulong)actionIdCount; i++)
             {
-                var mappedActionId = ACTION_ID_MAP.ContainsKey((CommonActionID)playerState.CurrentActionId) ? 
+                var mappedActionId = ACTION_ID_MAP.ContainsKey((CommonActionID)playerState.CurrentActionId) ?
                     ACTION_ID_MAP[(CommonActionID)playerState.CurrentActionId] : 0;
                 features.Add((mappedActionId == (int)i) ? 1f : 0f);
             }
@@ -158,22 +105,6 @@ namespace Footsies
             features.Add(playerState.WouldNextForwardInputDash ? 1f : 0f);
             features.Add(playerState.WouldNextBackwardInputDash ? 1f : 0f);
             features.Add(Mathf.Min(playerState.SpecialAttackProgress, 1.0f));
-            
-            
-            // // Input buffer encoding
-            // foreach (int input in playerState.InputBuffer)
-            // {
-            //     var inputFeatures = new float[7];
-            //     if (input >= 0 && input < inputFeatures.Length)
-            //     {
-            //         inputFeatures[input] = 1f;
-            //     }
-            //     else
-            //     {
-            //         Debug.LogWarning($"Input value {input} is out of bounds for inputFeatures array of size {inputFeatures.Length}");
-            //     }
-            //     features.AddRange(inputFeatures);
-            // }
 
             return features;
         }

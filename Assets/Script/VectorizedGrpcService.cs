@@ -11,10 +11,11 @@ namespace Footsies
     /// gRPC service for vectorized (batched) environment operations.
     /// Runs N independent BattleSimulations in parallel for high-throughput RL training.
     ///
-    /// Usage from Python client:
-    ///   1. Call InitEnvironments(n=1000)
-    ///   2. Call BatchStep(p1_actions=[...], p2_actions=[...], n_frames=4) repeatedly
-    ///   3. On done environments, call BatchReset(reset_mask=[true, false, ...])
+    /// Two modes:
+    ///   Raw state endpoints (BatchStep/BatchReset/BatchResetAll):
+    ///     Return per-field raw state arrays. Python performs encoding.
+    ///   Encoded endpoints (BatchStepEncoded/BatchResetEncoded/BatchResetAllEncoded):
+    ///     Return flat pre-encoded observation arrays. C# performs encoding via VectorizedEncoder.
     ///
     /// All batch operations execute on the gRPC thread using Parallel.For —
     /// no main thread dispatch needed since BattleSimulation is pure C#.
@@ -23,7 +24,10 @@ namespace Footsies
     {
         private VectorizedEnvironmentManager envManager;
 
-        // Marshallers for our custom message types
+        // =====================================================================
+        // Marshallers
+        // =====================================================================
+
         private static readonly Marshaller<InitEnvironmentsRequest> InitRequestMarshaller =
             Marshallers.Create(
                 msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
@@ -38,6 +42,26 @@ namespace Footsies
             Marshallers.Create(
                 msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
                 data => BatchResetInput.Parser.ParseFrom(data));
+
+        private static readonly Marshaller<BatchRawState> BatchRawStateMarshaller =
+            Marshallers.Create(
+                msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
+                data => BatchRawState.Parser.ParseFrom(data));
+
+        private static readonly Marshaller<BatchStepEncodedInput> BatchStepEncodedInputMarshaller =
+            Marshallers.Create(
+                msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
+                data => BatchStepEncodedInput.Parser.ParseFrom(data));
+
+        private static readonly Marshaller<BatchResetEncodedInput> BatchResetEncodedInputMarshaller =
+            Marshallers.Create(
+                msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
+                data => BatchResetEncodedInput.Parser.ParseFrom(data));
+
+        private static readonly Marshaller<BatchResetAllEncodedInput> BatchResetAllEncodedInputMarshaller =
+            Marshallers.Create(
+                msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
+                data => BatchResetAllEncodedInput.Parser.ParseFrom(data));
 
         private static readonly Marshaller<BatchEncodedState> BatchEncodedStateMarshaller =
             Marshallers.Create(
@@ -54,7 +78,10 @@ namespace Footsies
                 msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
                 data => BoolValue.Parser.ParseFrom(data));
 
+        // =====================================================================
         // Method definitions
+        // =====================================================================
+
         private static readonly string ServiceName = "VectorizedFootsiesService";
 
         private static readonly Method<InitEnvironmentsRequest, Empty> InitMethod =
@@ -62,20 +89,37 @@ namespace Footsies
                 MethodType.Unary, ServiceName, "InitEnvironments",
                 InitRequestMarshaller, EmptyMarshaller);
 
-        private static readonly Method<BatchStepInput, BatchEncodedState> BatchStepMethod =
-            new Method<BatchStepInput, BatchEncodedState>(
+        // Raw state endpoints
+        private static readonly Method<BatchStepInput, BatchRawState> BatchStepMethod =
+            new Method<BatchStepInput, BatchRawState>(
                 MethodType.Unary, ServiceName, "BatchStep",
-                BatchStepInputMarshaller, BatchEncodedStateMarshaller);
+                BatchStepInputMarshaller, BatchRawStateMarshaller);
 
-        private static readonly Method<BatchResetInput, BatchEncodedState> BatchResetMethod =
-            new Method<BatchResetInput, BatchEncodedState>(
+        private static readonly Method<BatchResetInput, BatchRawState> BatchResetMethod =
+            new Method<BatchResetInput, BatchRawState>(
                 MethodType.Unary, ServiceName, "BatchReset",
-                BatchResetInputMarshaller, BatchEncodedStateMarshaller);
+                BatchResetInputMarshaller, BatchRawStateMarshaller);
 
-        private static readonly Method<Empty, BatchEncodedState> BatchResetAllMethod =
-            new Method<Empty, BatchEncodedState>(
+        private static readonly Method<Empty, BatchRawState> BatchResetAllMethod =
+            new Method<Empty, BatchRawState>(
                 MethodType.Unary, ServiceName, "BatchResetAll",
-                EmptyMarshaller, BatchEncodedStateMarshaller);
+                EmptyMarshaller, BatchRawStateMarshaller);
+
+        // Encoded state endpoints
+        private static readonly Method<BatchStepEncodedInput, BatchEncodedState> BatchStepEncodedMethod =
+            new Method<BatchStepEncodedInput, BatchEncodedState>(
+                MethodType.Unary, ServiceName, "BatchStepEncoded",
+                BatchStepEncodedInputMarshaller, BatchEncodedStateMarshaller);
+
+        private static readonly Method<BatchResetEncodedInput, BatchEncodedState> BatchResetEncodedMethod =
+            new Method<BatchResetEncodedInput, BatchEncodedState>(
+                MethodType.Unary, ServiceName, "BatchResetEncoded",
+                BatchResetEncodedInputMarshaller, BatchEncodedStateMarshaller);
+
+        private static readonly Method<BatchResetAllEncodedInput, BatchEncodedState> BatchResetAllEncodedMethod =
+            new Method<BatchResetAllEncodedInput, BatchEncodedState>(
+                MethodType.Unary, ServiceName, "BatchResetAllEncoded",
+                BatchResetAllEncodedInputMarshaller, BatchEncodedStateMarshaller);
 
         private static readonly Method<Empty, BoolValue> IsVecReadyMethod =
             new Method<Empty, BoolValue>(
@@ -84,18 +128,26 @@ namespace Footsies
 
         /// <summary>
         /// Register this service's methods on the gRPC server builder.
-        /// Call this from GrpcServerSingleton.StartServer().
         /// </summary>
         public static ServerServiceDefinition BindService(VectorizedGrpcService impl)
         {
             return ServerServiceDefinition.CreateBuilder()
                 .AddMethod(InitMethod, impl.HandleInitEnvironments)
+                // Raw state endpoints
                 .AddMethod(BatchStepMethod, impl.HandleBatchStep)
                 .AddMethod(BatchResetMethod, impl.HandleBatchReset)
                 .AddMethod(BatchResetAllMethod, impl.HandleBatchResetAll)
+                // Encoded state endpoints
+                .AddMethod(BatchStepEncodedMethod, impl.HandleBatchStepEncoded)
+                .AddMethod(BatchResetEncodedMethod, impl.HandleBatchResetEncoded)
+                .AddMethod(BatchResetAllEncodedMethod, impl.HandleBatchResetAllEncoded)
                 .AddMethod(IsVecReadyMethod, impl.HandleIsVecReady)
                 .Build();
         }
+
+        // =====================================================================
+        // Init
+        // =====================================================================
 
         private Task<Empty> HandleInitEnvironments(InitEnvironmentsRequest request, ServerCallContext context)
         {
@@ -103,7 +155,6 @@ namespace Footsies
             {
                 int numEnvs = (int)request.NumEnvironments;
 
-                // We need to access FighterData from the main thread (ScriptableObject)
                 var tcs = new TaskCompletionSource<Empty>();
 
                 UnityMainThreadDispatcher.Instance.Enqueue(() =>
@@ -118,7 +169,6 @@ namespace Footsies
                             return;
                         }
 
-                        // FighterData is a ScriptableObject — its dictionaries must be set up on main thread
                         var fighterData = battleCore.fighterDataList[0];
 
                         envManager = new VectorizedEnvironmentManager();
@@ -143,17 +193,19 @@ namespace Footsies
             }
         }
 
-        private Task<BatchEncodedState> HandleBatchStep(BatchStepInput request, ServerCallContext context)
+        // =====================================================================
+        // Raw state endpoints
+        // =====================================================================
+
+        private Task<BatchRawState> HandleBatchStep(BatchStepInput request, ServerCallContext context)
         {
             try
             {
-                if (envManager == null)
-                    throw new RpcException(new Status(StatusCode.FailedPrecondition, "Environments not initialized. Call InitEnvironments first."));
+                EnsureInitialized();
 
                 int n = envManager.NumEnvironments;
                 int nFrames = (int)request.NFrames;
 
-                // Convert repeated fields to arrays
                 int[] p1Actions = new int[n];
                 int[] p2Actions = new int[n];
                 for (int i = 0; i < n; i++)
@@ -162,18 +214,11 @@ namespace Footsies
                     p2Actions[i] = (int)request.P2Actions[i];
                 }
 
-                // Step all environments in parallel (pure C#, no main thread needed)
                 envManager.BatchStep(p1Actions, p2Actions, nFrames);
 
-                // Build response from pre-allocated buffers
-                var response = BuildBatchResponse();
-
-                return Task.FromResult(response);
+                return Task.FromResult(BuildRawBatchResponse());
             }
-            catch (RpcException)
-            {
-                throw;
-            }
+            catch (RpcException) { throw; }
             catch (Exception ex)
             {
                 Debug.LogError($"BatchStep exception: {ex}");
@@ -181,12 +226,11 @@ namespace Footsies
             }
         }
 
-        private Task<BatchEncodedState> HandleBatchReset(BatchResetInput request, ServerCallContext context)
+        private Task<BatchRawState> HandleBatchReset(BatchResetInput request, ServerCallContext context)
         {
             try
             {
-                if (envManager == null)
-                    throw new RpcException(new Status(StatusCode.FailedPrecondition, "Environments not initialized."));
+                EnsureInitialized();
 
                 int n = envManager.NumEnvironments;
                 bool[] resetMask = new bool[n];
@@ -195,13 +239,9 @@ namespace Footsies
 
                 envManager.BatchReset(resetMask);
 
-                var response = BuildBatchResponse();
-                return Task.FromResult(response);
+                return Task.FromResult(BuildRawBatchResponse());
             }
-            catch (RpcException)
-            {
-                throw;
-            }
+            catch (RpcException) { throw; }
             catch (Exception ex)
             {
                 Debug.LogError($"BatchReset exception: {ex}");
@@ -209,22 +249,15 @@ namespace Footsies
             }
         }
 
-        private Task<BatchEncodedState> HandleBatchResetAll(Empty request, ServerCallContext context)
+        private Task<BatchRawState> HandleBatchResetAll(Empty request, ServerCallContext context)
         {
             try
             {
-                if (envManager == null)
-                    throw new RpcException(new Status(StatusCode.FailedPrecondition, "Environments not initialized."));
-
+                EnsureInitialized();
                 envManager.ResetAll();
-
-                var response = BuildBatchResponse();
-                return Task.FromResult(response);
+                return Task.FromResult(BuildRawBatchResponse());
             }
-            catch (RpcException)
-            {
-                throw;
-            }
+            catch (RpcException) { throw; }
             catch (Exception ex)
             {
                 Debug.LogError($"BatchResetAll exception: {ex}");
@@ -232,14 +265,119 @@ namespace Footsies
             }
         }
 
+        // =====================================================================
+        // Encoded state endpoints
+        // =====================================================================
+
+        private Task<BatchEncodedState> HandleBatchStepEncoded(BatchStepEncodedInput request, ServerCallContext context)
+        {
+            try
+            {
+                EnsureInitialized();
+
+                int n = envManager.NumEnvironments;
+                int nFrames = (int)request.NFrames;
+                int numActions = (int)request.NumActions;
+
+                int[] p1Actions = new int[n];
+                int[] p2Actions = new int[n];
+                int[] prevP1Actions = new int[n];
+                int[] prevP2Actions = new int[n];
+                bool[] p1HoldingSpecial = new bool[n];
+                bool[] p2HoldingSpecial = new bool[n];
+
+                for (int i = 0; i < n; i++)
+                {
+                    p1Actions[i] = (int)request.P1Actions[i];
+                    p2Actions[i] = (int)request.P2Actions[i];
+                    prevP1Actions[i] = (int)request.PrevP1Actions[i];
+                    prevP2Actions[i] = (int)request.PrevP2Actions[i];
+                    p1HoldingSpecial[i] = request.P1HoldingSpecial[i];
+                    p2HoldingSpecial[i] = request.P2HoldingSpecial[i];
+                }
+
+                envManager.BatchStepAndEncode(
+                    p1Actions, p2Actions, nFrames,
+                    prevP1Actions, prevP2Actions,
+                    p1HoldingSpecial, p2HoldingSpecial,
+                    numActions);
+
+                return Task.FromResult(BuildEncodedBatchResponse());
+            }
+            catch (RpcException) { throw; }
+            catch (Exception ex)
+            {
+                Debug.LogError($"BatchStepEncoded exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+        }
+
+        private Task<BatchEncodedState> HandleBatchResetEncoded(BatchResetEncodedInput request, ServerCallContext context)
+        {
+            try
+            {
+                EnsureInitialized();
+
+                int n = envManager.NumEnvironments;
+                int numActions = (int)request.NumActions;
+
+                bool[] resetMask = new bool[n];
+                for (int i = 0; i < n; i++)
+                    resetMask[i] = request.ResetMask[i];
+
+                envManager.BatchResetAndEncode(resetMask, numActions);
+
+                return Task.FromResult(BuildEncodedBatchResponse());
+            }
+            catch (RpcException) { throw; }
+            catch (Exception ex)
+            {
+                Debug.LogError($"BatchResetEncoded exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+        }
+
+        private Task<BatchEncodedState> HandleBatchResetAllEncoded(BatchResetAllEncodedInput request, ServerCallContext context)
+        {
+            try
+            {
+                EnsureInitialized();
+                int numActions = (int)request.NumActions;
+
+                envManager.ResetAllAndEncode(numActions);
+
+                return Task.FromResult(BuildEncodedBatchResponse());
+            }
+            catch (RpcException) { throw; }
+            catch (Exception ex)
+            {
+                Debug.LogError($"BatchResetAllEncoded exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+        }
+
+        // =====================================================================
+        // IsVecReady
+        // =====================================================================
+
         private Task<BoolValue> HandleIsVecReady(Empty request, ServerCallContext context)
         {
             return Task.FromResult(new BoolValue { Value = envManager != null });
         }
 
-        private BatchEncodedState BuildBatchResponse()
+        // =====================================================================
+        // Response builders
+        // =====================================================================
+
+        private void EnsureInitialized()
         {
-            var response = new BatchEncodedState();
+            if (envManager == null)
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, "Environments not initialized. Call InitEnvironments first."));
+        }
+
+        private BatchRawState BuildRawBatchResponse()
+        {
+            var response = new BatchRawState();
 
             int n = envManager.NumEnvironments;
             long[] roundStates = envManager.GetRoundStates();
@@ -301,6 +439,34 @@ namespace Footsies
                 response.P2WouldNextForwardInputDash.Add(f2.WouldNextForwardInputDash());
                 response.P2WouldNextBackwardInputDash.Add(f2.WouldNextBackwardInputDash());
                 response.P2SpecialAttackProgress.Add(f2.GetSpecialAttackProgress());
+            }
+
+            return response;
+        }
+
+        private BatchEncodedState BuildEncodedBatchResponse()
+        {
+            var response = new BatchEncodedState();
+
+            int n = envManager.NumEnvironments;
+            long[] roundStates = envManager.GetRoundStates();
+            bool[] dones = envManager.GetDones();
+            int[] rewards = envManager.GetRewards();
+            float[] p1Enc = envManager.GetP1Encodings();
+            float[] p2Enc = envManager.GetP2Encodings();
+
+            // Copy flat encoding arrays into response
+            for (int i = 0; i < p1Enc.Length; i++)
+                response.P1Encodings.Add(p1Enc[i]);
+            for (int i = 0; i < p2Enc.Length; i++)
+                response.P2Encodings.Add(p2Enc[i]);
+
+            // Copy metadata
+            for (int i = 0; i < n; i++)
+            {
+                response.RoundStates.Add(roundStates[i]);
+                response.Dones.Add(dones[i]);
+                response.Rewards.Add(rewards[i]);
             }
 
             return response;

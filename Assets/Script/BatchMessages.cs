@@ -189,8 +189,8 @@ public sealed class BatchResetInput : IMessage<BatchResetInput>
 }
 
 /// <summary>
-/// Response containing game states for all environments as flat arrays of length num_envs.
-/// Python accesses as: response.p1_position_x[env_idx], response.dones[env_idx], etc.
+/// Response containing raw (unencoded) game states for all environments as flat arrays of length num_envs.
+/// Used when Python performs its own encoding. Python accesses as: response.p1_position_x[env_idx], etc.
 ///
 /// Field layout:
 ///   3: round_states (repeated int64)       4: dones (repeated bool)
@@ -208,9 +208,9 @@ public sealed class BatchResetInput : IMessage<BatchResetInput>
 ///   25: p1_would_next_backward_input_dash (bool) 26: p1_special_attack_progress (float)
 ///   P2 fields (27-46): same layout as P1
 /// </summary>
-public sealed class BatchEncodedState : IMessage<BatchEncodedState>
+public sealed class BatchRawState : IMessage<BatchRawState>
 {
-    public static MessageParser<BatchEncodedState> Parser { get; } = new MessageParser<BatchEncodedState>(() => new BatchEncodedState());
+    public static MessageParser<BatchRawState> Parser { get; } = new MessageParser<BatchRawState>(() => new BatchRawState());
 
     // Common fields
     public RepeatedField<long> RoundStates { get; } = new RepeatedField<long>();           // field 3
@@ -269,7 +269,7 @@ public sealed class BatchEncodedState : IMessage<BatchEncodedState>
 
     public MessageDescriptor Descriptor => null;
 
-    public void MergeFrom(BatchEncodedState other)
+    public void MergeFrom(BatchRawState other)
     {
         if (other == null) return;
         RoundStates.Add(other.RoundStates);
@@ -465,9 +465,9 @@ public sealed class BatchEncodedState : IMessage<BatchEncodedState>
         return size;
     }
 
-    public BatchEncodedState Clone()
+    public BatchRawState Clone()
     {
-        var clone = new BatchEncodedState();
+        var clone = new BatchRawState();
         clone.RoundStates.Add(RoundStates); clone.Dones.Add(Dones);
         clone.Rewards.Add(Rewards); clone.FrameCounts.Add(FrameCounts);
         clone.P1PositionX.Add(P1PositionX); clone.P1IsDead.Add(P1IsDead);
@@ -497,8 +497,306 @@ public sealed class BatchEncodedState : IMessage<BatchEncodedState>
         return clone;
     }
 
+    public bool Equals(BatchRawState other) => other != null;
+    public override bool Equals(object obj) => Equals(obj as BatchRawState);
+    public override int GetHashCode() => RoundStates.GetHashCode();
+    public override string ToString() => $"BatchRawState {{ envs={Dones.Count} }}";
+}
+
+/// <summary>
+/// Response containing pre-encoded observations for all environments.
+/// p1_encodings and p2_encodings are flat float arrays of length num_envs * obs_size.
+/// Python reshapes as: np.array(response.p1_encodings).reshape(num_envs, obs_size)
+///
+/// Field layout:
+///   1: p1_encodings (repeated float, packed)
+///   2: p2_encodings (repeated float, packed)
+///   3: round_states (repeated int64)
+///   4: dones (repeated bool)
+///   5: rewards (repeated int32)
+/// </summary>
+public sealed class BatchEncodedState : IMessage<BatchEncodedState>
+{
+    public static MessageParser<BatchEncodedState> Parser { get; } = new MessageParser<BatchEncodedState>(() => new BatchEncodedState());
+
+    public RepeatedField<float> P1Encodings { get; } = new RepeatedField<float>();   // field 1
+    public RepeatedField<float> P2Encodings { get; } = new RepeatedField<float>();   // field 2
+    public RepeatedField<long> RoundStates { get; } = new RepeatedField<long>();     // field 3
+    public RepeatedField<bool> Dones { get; } = new RepeatedField<bool>();           // field 4
+    public RepeatedField<int> Rewards { get; } = new RepeatedField<int>();           // field 5
+
+    public MessageDescriptor Descriptor => null;
+
+    public void MergeFrom(BatchEncodedState other)
+    {
+        if (other == null) return;
+        P1Encodings.Add(other.P1Encodings);
+        P2Encodings.Add(other.P2Encodings);
+        RoundStates.Add(other.RoundStates);
+        Dones.Add(other.Dones);
+        Rewards.Add(other.Rewards);
+    }
+
+    public void MergeFrom(CodedInputStream input)
+    {
+        uint tag;
+        while ((tag = input.ReadTag()) != 0)
+        {
+            switch (tag)
+            {
+                case 10: case 13: P1Encodings.AddEntriesFrom(input, FieldCodec.ForFloat(10)); break;
+                case 18: case 21: P2Encodings.AddEntriesFrom(input, FieldCodec.ForFloat(18)); break;
+                case 26: case 24: RoundStates.AddEntriesFrom(input, FieldCodec.ForInt64(26)); break;
+                case 34: case 32: Dones.AddEntriesFrom(input, FieldCodec.ForBool(34)); break;
+                case 42: case 40: Rewards.AddEntriesFrom(input, FieldCodec.ForInt32(42)); break;
+                default: input.SkipLastField(); break;
+            }
+        }
+    }
+
+    public void WriteTo(CodedOutputStream output)
+    {
+        P1Encodings.WriteTo(output, FieldCodec.ForFloat(10));
+        P2Encodings.WriteTo(output, FieldCodec.ForFloat(18));
+        RoundStates.WriteTo(output, FieldCodec.ForInt64(26));
+        Dones.WriteTo(output, FieldCodec.ForBool(34));
+        Rewards.WriteTo(output, FieldCodec.ForInt32(42));
+    }
+
+    public int CalculateSize()
+    {
+        int size = 0;
+        size += P1Encodings.CalculateSize(FieldCodec.ForFloat(10));
+        size += P2Encodings.CalculateSize(FieldCodec.ForFloat(18));
+        size += RoundStates.CalculateSize(FieldCodec.ForInt64(26));
+        size += Dones.CalculateSize(FieldCodec.ForBool(34));
+        size += Rewards.CalculateSize(FieldCodec.ForInt32(42));
+        return size;
+    }
+
+    public BatchEncodedState Clone()
+    {
+        var clone = new BatchEncodedState();
+        clone.P1Encodings.Add(P1Encodings);
+        clone.P2Encodings.Add(P2Encodings);
+        clone.RoundStates.Add(RoundStates);
+        clone.Dones.Add(Dones);
+        clone.Rewards.Add(Rewards);
+        return clone;
+    }
+
     public bool Equals(BatchEncodedState other) => other != null;
     public override bool Equals(object obj) => Equals(obj as BatchEncodedState);
-    public override int GetHashCode() => RoundStates.GetHashCode();
+    public override int GetHashCode() => P1Encodings.GetHashCode();
     public override string ToString() => $"BatchEncodedState {{ envs={Dones.Count} }}";
+}
+
+/// <summary>
+/// Request to step all environments with per-env actions, including Python-side state
+/// needed for C#-side encoding (previous actions, special charge state).
+///
+/// Field layout:
+///   1: p1_actions (repeated int64)     2: p2_actions (repeated int64)
+///   3: n_frames (int64)               4: prev_p1_actions (repeated int64)
+///   5: prev_p2_actions (repeated int64) 6: p1_holding_special (repeated bool)
+///   7: p2_holding_special (repeated bool) 8: num_actions (int64)
+/// </summary>
+public sealed class BatchStepEncodedInput : IMessage<BatchStepEncodedInput>
+{
+    public static MessageParser<BatchStepEncodedInput> Parser { get; } = new MessageParser<BatchStepEncodedInput>(() => new BatchStepEncodedInput());
+
+    public RepeatedField<long> P1Actions { get; } = new RepeatedField<long>();           // field 1
+    public RepeatedField<long> P2Actions { get; } = new RepeatedField<long>();           // field 2
+    public long NFrames { get; set; } = 1;                                               // field 3
+    public RepeatedField<long> PrevP1Actions { get; } = new RepeatedField<long>();       // field 4
+    public RepeatedField<long> PrevP2Actions { get; } = new RepeatedField<long>();       // field 5
+    public RepeatedField<bool> P1HoldingSpecial { get; } = new RepeatedField<bool>();    // field 6
+    public RepeatedField<bool> P2HoldingSpecial { get; } = new RepeatedField<bool>();    // field 7
+    public long NumActions { get; set; }                                                  // field 8
+
+    public MessageDescriptor Descriptor => null;
+
+    public void MergeFrom(BatchStepEncodedInput other)
+    {
+        if (other == null) return;
+        P1Actions.Add(other.P1Actions);
+        P2Actions.Add(other.P2Actions);
+        NFrames = other.NFrames;
+        PrevP1Actions.Add(other.PrevP1Actions);
+        PrevP2Actions.Add(other.PrevP2Actions);
+        P1HoldingSpecial.Add(other.P1HoldingSpecial);
+        P2HoldingSpecial.Add(other.P2HoldingSpecial);
+        NumActions = other.NumActions;
+    }
+
+    public void MergeFrom(CodedInputStream input)
+    {
+        uint tag;
+        while ((tag = input.ReadTag()) != 0)
+        {
+            switch (tag)
+            {
+                case 10: case 8:  P1Actions.AddEntriesFrom(input, FieldCodec.ForInt64(10)); break;
+                case 18: case 16: P2Actions.AddEntriesFrom(input, FieldCodec.ForInt64(18)); break;
+                case 24: NFrames = input.ReadInt64(); break;
+                case 34: case 32: PrevP1Actions.AddEntriesFrom(input, FieldCodec.ForInt64(34)); break;
+                case 42: case 40: PrevP2Actions.AddEntriesFrom(input, FieldCodec.ForInt64(42)); break;
+                case 50: case 48: P1HoldingSpecial.AddEntriesFrom(input, FieldCodec.ForBool(50)); break;
+                case 58: case 56: P2HoldingSpecial.AddEntriesFrom(input, FieldCodec.ForBool(58)); break;
+                case 64: NumActions = input.ReadInt64(); break;
+                default: input.SkipLastField(); break;
+            }
+        }
+    }
+
+    public void WriteTo(CodedOutputStream output)
+    {
+        P1Actions.WriteTo(output, FieldCodec.ForInt64(10));
+        P2Actions.WriteTo(output, FieldCodec.ForInt64(18));
+        if (NFrames != 0) { output.WriteTag(3, WireFormat.WireType.Varint); output.WriteInt64(NFrames); }
+        PrevP1Actions.WriteTo(output, FieldCodec.ForInt64(34));
+        PrevP2Actions.WriteTo(output, FieldCodec.ForInt64(42));
+        P1HoldingSpecial.WriteTo(output, FieldCodec.ForBool(50));
+        P2HoldingSpecial.WriteTo(output, FieldCodec.ForBool(58));
+        if (NumActions != 0) { output.WriteTag(8, WireFormat.WireType.Varint); output.WriteInt64(NumActions); }
+    }
+
+    public int CalculateSize()
+    {
+        int size = 0;
+        size += P1Actions.CalculateSize(FieldCodec.ForInt64(10));
+        size += P2Actions.CalculateSize(FieldCodec.ForInt64(18));
+        if (NFrames != 0) size += 1 + CodedOutputStream.ComputeInt64Size(NFrames);
+        size += PrevP1Actions.CalculateSize(FieldCodec.ForInt64(34));
+        size += PrevP2Actions.CalculateSize(FieldCodec.ForInt64(42));
+        size += P1HoldingSpecial.CalculateSize(FieldCodec.ForBool(50));
+        size += P2HoldingSpecial.CalculateSize(FieldCodec.ForBool(58));
+        if (NumActions != 0) size += 1 + CodedOutputStream.ComputeInt64Size(NumActions);
+        return size;
+    }
+
+    public BatchStepEncodedInput Clone()
+    {
+        var clone = new BatchStepEncodedInput { NFrames = NFrames, NumActions = NumActions };
+        clone.P1Actions.Add(P1Actions); clone.P2Actions.Add(P2Actions);
+        clone.PrevP1Actions.Add(PrevP1Actions); clone.PrevP2Actions.Add(PrevP2Actions);
+        clone.P1HoldingSpecial.Add(P1HoldingSpecial); clone.P2HoldingSpecial.Add(P2HoldingSpecial);
+        return clone;
+    }
+
+    public bool Equals(BatchStepEncodedInput other) => other != null;
+    public override bool Equals(object obj) => Equals(obj as BatchStepEncodedInput);
+    public override int GetHashCode() => P1Actions.GetHashCode();
+    public override string ToString() => $"BatchStepEncodedInput {{ envs={P1Actions.Count}, nFrames={NFrames} }}";
+}
+
+/// <summary>
+/// Request to reset specific environments and return encoded observations.
+/// Fields: reset_mask (1, repeated bool packed), num_actions (2, int64)
+/// </summary>
+public sealed class BatchResetEncodedInput : IMessage<BatchResetEncodedInput>
+{
+    public static MessageParser<BatchResetEncodedInput> Parser { get; } = new MessageParser<BatchResetEncodedInput>(() => new BatchResetEncodedInput());
+
+    public RepeatedField<bool> ResetMask { get; } = new RepeatedField<bool>();  // field 1
+    public long NumActions { get; set; }                                         // field 2
+
+    public MessageDescriptor Descriptor => null;
+
+    public void MergeFrom(BatchResetEncodedInput other)
+    {
+        if (other == null) return;
+        ResetMask.Add(other.ResetMask);
+        NumActions = other.NumActions;
+    }
+
+    public void MergeFrom(CodedInputStream input)
+    {
+        uint tag;
+        while ((tag = input.ReadTag()) != 0)
+        {
+            switch (tag)
+            {
+                case 10: case 8: ResetMask.AddEntriesFrom(input, FieldCodec.ForBool(10)); break;
+                case 16: NumActions = input.ReadInt64(); break;
+                default: input.SkipLastField(); break;
+            }
+        }
+    }
+
+    public void WriteTo(CodedOutputStream output)
+    {
+        ResetMask.WriteTo(output, FieldCodec.ForBool(10));
+        if (NumActions != 0) { output.WriteTag(2, WireFormat.WireType.Varint); output.WriteInt64(NumActions); }
+    }
+
+    public int CalculateSize()
+    {
+        int size = ResetMask.CalculateSize(FieldCodec.ForBool(10));
+        if (NumActions != 0) size += 1 + CodedOutputStream.ComputeInt64Size(NumActions);
+        return size;
+    }
+
+    public BatchResetEncodedInput Clone()
+    {
+        var clone = new BatchResetEncodedInput { NumActions = NumActions };
+        clone.ResetMask.Add(ResetMask);
+        return clone;
+    }
+
+    public bool Equals(BatchResetEncodedInput other) => other != null;
+    public override bool Equals(object obj) => Equals(obj as BatchResetEncodedInput);
+    public override int GetHashCode() => ResetMask.GetHashCode();
+    public override string ToString() => $"BatchResetEncodedInput {{ envs={ResetMask.Count} }}";
+}
+
+/// <summary>
+/// Request to reset all environments and return encoded observations.
+/// Fields: num_actions (1, int64)
+/// </summary>
+public sealed class BatchResetAllEncodedInput : IMessage<BatchResetAllEncodedInput>
+{
+    public static MessageParser<BatchResetAllEncodedInput> Parser { get; } = new MessageParser<BatchResetAllEncodedInput>(() => new BatchResetAllEncodedInput());
+
+    public long NumActions { get; set; }  // field 1
+
+    public MessageDescriptor Descriptor => null;
+
+    public void MergeFrom(BatchResetAllEncodedInput other)
+    {
+        if (other == null) return;
+        NumActions = other.NumActions;
+    }
+
+    public void MergeFrom(CodedInputStream input)
+    {
+        uint tag;
+        while ((tag = input.ReadTag()) != 0)
+        {
+            switch (tag)
+            {
+                case 8: NumActions = input.ReadInt64(); break;
+                default: input.SkipLastField(); break;
+            }
+        }
+    }
+
+    public void WriteTo(CodedOutputStream output)
+    {
+        if (NumActions != 0) { output.WriteTag(1, WireFormat.WireType.Varint); output.WriteInt64(NumActions); }
+    }
+
+    public int CalculateSize()
+    {
+        int size = 0;
+        if (NumActions != 0) size += 1 + CodedOutputStream.ComputeInt64Size(NumActions);
+        return size;
+    }
+
+    public BatchResetAllEncodedInput Clone() => new BatchResetAllEncodedInput { NumActions = NumActions };
+
+    public bool Equals(BatchResetAllEncodedInput other) => other != null && NumActions == other.NumActions;
+    public override bool Equals(object obj) => Equals(obj as BatchResetAllEncodedInput);
+    public override int GetHashCode() => NumActions.GetHashCode();
+    public override string ToString() => $"BatchResetAllEncodedInput {{ NumActions={NumActions} }}";
 }

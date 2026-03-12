@@ -74,9 +74,8 @@ namespace Footsies
         private BattleAI battleAI = null;
         private BattleAIBarracuda barracudaAI = null;
         [SerializeField] 
-        private AIEncoder encoder = new AIEncoder(4);
-        // NOTE(chase): 4 is the default for 16 observation delay 
-        // divided by 4 frame skip, since inference cadence is every
+        private AIEncoder encoder = new AIEncoder();
+        // NOTE(chase): AIEncoder no longer uses observation delay.
         // 4 frames we only delay by 4 (instead of 16 which is the actual
         // old frame we're getting). 
         private static uint maxRecordingInputFrame = 60 * 60 * 5;
@@ -385,7 +384,6 @@ namespace Footsies
                         barracudaAI.resetHiddenStates();
                         barracudaAI.resetObsHistory();
                     }
-                    encoder.resetObsHistory();
 
                     break;
                 case RoundStateType.KO:
@@ -968,7 +966,6 @@ namespace Footsies
             _fighters.Clear();
             
             // Clear any other resources that might be hanging around
-            encoder.resetObsHistory();
         }
 
     }
