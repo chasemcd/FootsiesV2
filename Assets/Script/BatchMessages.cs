@@ -882,3 +882,82 @@ public sealed class GetBatchEncodedStateInput : IMessage<GetBatchEncodedStateInp
     public override int GetHashCode() => PrevP1Actions.GetHashCode();
     public override string ToString() => $"GetBatchEncodedStateInput {{ envs={PrevP1Actions.Count} }}";
 }
+
+/// <summary>
+/// Response containing per-environment GameState objects (structured player state data).
+/// Fields: game_states (1, repeated GameState), dones (2, repeated bool packed), rewards (3, repeated int32 packed)
+/// </summary>
+public sealed class BatchGameStates : IMessage<BatchGameStates>
+{
+    public static MessageParser<BatchGameStates> Parser { get; } = new MessageParser<BatchGameStates>(() => new BatchGameStates());
+
+    private static readonly FieldCodec<GameState> GameStateCodec =
+        FieldCodec.ForMessage(10, GameState.Parser);
+    private static readonly FieldCodec<bool> DonesCodec = FieldCodec.ForBool(18);
+    private static readonly FieldCodec<int> RewardsCodec = FieldCodec.ForInt32(26);
+
+    public RepeatedField<GameState> GameStates { get; } = new RepeatedField<GameState>();
+    public RepeatedField<bool> Dones { get; } = new RepeatedField<bool>();
+    public RepeatedField<int> Rewards { get; } = new RepeatedField<int>();
+
+    public MessageDescriptor Descriptor => null;
+
+    public void MergeFrom(BatchGameStates other)
+    {
+        if (other == null) return;
+        GameStates.Add(other.GameStates);
+        Dones.Add(other.Dones);
+        Rewards.Add(other.Rewards);
+    }
+
+    public void MergeFrom(CodedInputStream input)
+    {
+        uint tag;
+        while ((tag = input.ReadTag()) != 0)
+        {
+            switch (tag)
+            {
+                case 10: // length-delimited GameState submessage
+                    GameStates.AddEntriesFrom(input, GameStateCodec);
+                    break;
+                case 18: case 16: // packed or individual bool
+                    Dones.AddEntriesFrom(input, DonesCodec);
+                    break;
+                case 26: case 24: // packed or individual int32
+                    Rewards.AddEntriesFrom(input, RewardsCodec);
+                    break;
+                default: input.SkipLastField(); break;
+            }
+        }
+    }
+
+    public void WriteTo(CodedOutputStream output)
+    {
+        GameStates.WriteTo(output, GameStateCodec);
+        Dones.WriteTo(output, DonesCodec);
+        Rewards.WriteTo(output, RewardsCodec);
+    }
+
+    public int CalculateSize()
+    {
+        int size = 0;
+        size += GameStates.CalculateSize(GameStateCodec);
+        size += Dones.CalculateSize(DonesCodec);
+        size += Rewards.CalculateSize(RewardsCodec);
+        return size;
+    }
+
+    public BatchGameStates Clone()
+    {
+        var clone = new BatchGameStates();
+        clone.GameStates.Add(GameStates);
+        clone.Dones.Add(Dones);
+        clone.Rewards.Add(Rewards);
+        return clone;
+    }
+
+    public bool Equals(BatchGameStates other) => other != null;
+    public override bool Equals(object obj) => Equals(obj as BatchGameStates);
+    public override int GetHashCode() => GameStates.GetHashCode();
+    public override string ToString() => $"BatchGameStates {{ envs={GameStates.Count} }}";
+}

@@ -68,6 +68,21 @@ message BatchResetAllEncodedInput {
 | **`BatchStepEncoded`** | `BatchStepEncodedInput` | `BatchEncodedState` | Step, return encoded obs |
 | **`BatchResetEncoded`** | `BatchResetEncodedInput` | `BatchEncodedState` | Reset, return encoded obs |
 | **`BatchResetAllEncoded`** | `BatchResetAllEncodedInput` | `BatchEncodedState` | Reset all, return encoded obs |
+| **`GetBatchRawState`** | `Empty` | `BatchRawState` | Get current raw state without stepping |
+| **`GetBatchEncodedState`** | `GetBatchEncodedStateInput` | `BatchEncodedState` | Get current encoded obs without stepping |
+
+**`GetBatchEncodedStateInput`**:
+```protobuf
+message GetBatchEncodedStateInput {
+    repeated int64 prev_p1_actions = 1;
+    repeated int64 prev_p2_actions = 2;
+    repeated bool p1_holding_special = 3;
+    repeated bool p2_holding_special = 4;
+    int64 num_actions = 5;
+}
+```
+
+The getter endpoints allow fetching the current state in either format after stepping in the other mode. For example, after calling `BatchStepEncoded`, you can call `GetBatchRawState` to also get the per-field arrays without re-stepping.
 
 ---
 
@@ -198,7 +213,7 @@ Proto stubs regenerated from updated `.proto`. New message classes and service s
 - `pb2.BatchRawState` (was `BatchEncodedState`)
 - `pb2.BatchEncodedState` (new, flat encodings)
 - `pb2.BatchStepEncodedInput`, `pb2.BatchResetEncodedInput`, `pb2.BatchResetAllEncodedInput`
-- `VectorizedFootsiesServiceStub` now has `BatchStepEncoded`, `BatchResetEncoded`, `BatchResetAllEncoded`
+- `VectorizedFootsiesServiceStub` now has `BatchStepEncoded`, `BatchResetEncoded`, `BatchResetAllEncoded`, `GetBatchRawState`, `GetBatchEncodedState`
 
 ### Updated: `scripts/grpc_batch_test.py`
 Tests both raw and encoded modes with throughput comparison.

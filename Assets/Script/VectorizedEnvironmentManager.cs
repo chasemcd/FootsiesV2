@@ -255,6 +255,24 @@ namespace Footsies
         public float[] GetP2Encodings() => p2Encodings;
 
         /// <summary>
+        /// Build a BatchGameStates response from the current state of all environments.
+        /// Each environment produces a GameState with both PlayerState objects.
+        /// </summary>
+        public BatchGameStates GetBatchGameStates()
+        {
+            var response = new BatchGameStates();
+
+            for (int i = 0; i < numEnvironments; i++)
+            {
+                response.GameStates.Add(environments[i].GetGameState());
+                response.Dones.Add(batchDones[i]);
+                response.Rewards.Add(batchRewards[i]);
+            }
+
+            return response;
+        }
+
+        /// <summary>
         /// Get a specific environment for inspection.
         /// </summary>
         public BattleSimulation GetEnvironment(int index) => environments[index];

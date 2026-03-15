@@ -73,6 +73,11 @@ namespace Footsies
                 msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
                 data => GetBatchEncodedStateInput.Parser.ParseFrom(data));
 
+        private static readonly Marshaller<BatchGameStates> BatchGameStatesMarshaller =
+            Marshallers.Create(
+                msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
+                data => BatchGameStates.Parser.ParseFrom(data));
+
         private static readonly Marshaller<Empty> EmptyMarshaller =
             Marshallers.Create(
                 msg => Google.Protobuf.MessageExtensions.ToByteArray(msg),
@@ -137,6 +142,11 @@ namespace Footsies
                 MethodType.Unary, ServiceName, "GetBatchEncodedState",
                 GetBatchEncodedStateInputMarshaller, BatchEncodedStateMarshaller);
 
+        private static readonly Method<Empty, BatchGameStates> GetBatchGameStatesMethod =
+            new Method<Empty, BatchGameStates>(
+                MethodType.Unary, ServiceName, "GetBatchGameStates",
+                EmptyMarshaller, BatchGameStatesMarshaller);
+
         private static readonly Method<Empty, BoolValue> IsVecReadyMethod =
             new Method<Empty, BoolValue>(
                 MethodType.Unary, ServiceName, "IsVecReady",
@@ -160,6 +170,7 @@ namespace Footsies
                 // State getter endpoints
                 .AddMethod(GetBatchRawStateMethod, impl.HandleGetBatchRawState)
                 .AddMethod(GetBatchEncodedStateMethod, impl.HandleGetBatchEncodedState)
+                .AddMethod(GetBatchGameStatesMethod, impl.HandleGetBatchGameStates)
                 .AddMethod(IsVecReadyMethod, impl.HandleIsVecReady)
                 .Build();
         }
@@ -427,6 +438,21 @@ namespace Footsies
             catch (Exception ex)
             {
                 Debug.LogError($"GetBatchEncodedState exception: {ex}");
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+        }
+
+        private Task<BatchGameStates> HandleGetBatchGameStates(Empty request, ServerCallContext context)
+        {
+            try
+            {
+                EnsureInitialized();
+                return Task.FromResult(envManager.GetBatchGameStates());
+            }
+            catch (RpcException) { throw; }
+            catch (Exception ex)
+            {
+                Debug.LogError($"GetBatchGameStates exception: {ex}");
                 throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
             }
         }
